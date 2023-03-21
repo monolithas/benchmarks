@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "benchmarks"
+description = "A benchmark tool based on benchmarksgame"
+version = "0.1.0"
+license = "GPL-3.0-or-later"
+readme = "README.md"
+authors = [ "Michael House <mjhouse@monolith.solutions>" ]
+keywords = ["benchmarks", "rust"]
+
+[tool.poetry.scripts]
+bencher = 'benchmarks.console:run'
+
+[tool.poetry.dependencies]
+psutil = "^5.9.4"
+

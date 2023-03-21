@@ -1,0 +1,77 @@
+[general]
+
+# run at each value N times
+runs = 6
+
+# maximum time to wait on program
+timeout = 3600
+
+# memory sampling delay
+sample = 0.2
+
+[tools]
+# build tools for benchmarks
+
+rust = 'rustc'
+cc = 'gcc-12'
+cxx = 'g++-12'
+ada = 'gnatmake'
+
+[options]
+# flags for each tool
+
+rust = '-C opt-level=3 -C target-cpu=ivybridge -C codegen-units=1'
+cc = '-lm'
+cxx = '-mavx'
+ada = '-march=ivybridge -gnatNp'
+
+[filters]
+
+# build only these directories (relative to root)
+directories = [
+    'programs/fannkuchredux',
+    'programs/nbody',
+    'programs/regexdna',
+    'programs/spectralnorm'
+]
+
+# include additional files (relative to root)
+include = []
+
+# exclude these specific files (relative to root)
+exclude = []
+
+# ignore files with these extensions
+ignore = []
+
+[values]
+
+fannkuchredux = [
+    9, 
+    10, 
+    11
+]
+
+nbody = [
+    10000, 
+    20000, 
+    30000, 
+    40000, 
+    50000
+]
+
+regexdna = [
+    10000
+]
+
+spectralnorm = [
+    1000, 
+    2000, 
+    3000
+]
+
+[data]
+
+knucleotide = 'data/knucleotide-input.txt'
+regexdna = 'data/regexdna-input.txt'
+revcomp = 'data/revcomp-input.txt'

@@ -12,4 +12,5 @@ bencher = 'benchmarks.console:run'
 
 [tool.poetry.dependencies]
 psutil = "^5.9.4"
+toml = "^0.10.2"
 

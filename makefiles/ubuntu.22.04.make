@@ -2,9 +2,21 @@
 # configuration
 ########################################
 
-COPTS  := -O3 -fomit-frame-pointer
-TARGET := $(MAKECMDGOALS)
-BENCH  := $(firstword $(subst -, ,$(TARGET)))
+OPTIONS := -O3 -fomit-frame-pointer
+TARGET  := $(MAKECMDGOALS)
+BENCH   := $(firstword $(subst -, ,$(TARGET)))
+
+# Options
+# 	ADA_OPTS 
+# 	C_OPTS   
+# 	RUST_OPTS
+# 	CPP_OPTS 
+
+# Tools
+# 	ADA_TOOL 
+# 	C_TOOL   
+# 	RUST_TOOL
+# 	CPP_TOOL 
 
 ########################################
 # targets
@@ -17,22 +29,22 @@ BENCH  := $(firstword $(subst -, ,$(TARGET)))
 	-@mv $< $@
 
 %.rust_run: %.rs 
-	$(RUST) $(RUSTOPTS) $< -o $@
+	$(RUST_TOOL) $(RUST_OPTS) $< -o $@
 
 # --------------------------------------
 # ada
 
 %.ada_run: %.ada
-	gnatchop -r -w $< && $(ADA) -pipe -Wall $(COPTS) $(ADAOPTS) -f $(BENCH).adb -o $@
+	gnatchop -r -w $< && $(ADA_TOOL) -pipe -Wall $(OPTIONS) $(ADA_OPTS) -f $(BENCH).adb -o $@
 
 # --------------------------------------
 # c
 
 %.c_run: %.c 
-	-$(GCC) -pipe -Wall $(COPTS) $< -o $@ $(GCCOPTS)
+	-$(C_TOOL) -pipe -Wall $(OPTIONS) $< -o $@ $(C_OPTS)
 
 # --------------------------------------
 # cpp
 
 %.cpp_run: %.cpp
-	-$(GXX) -c -pipe $(COPTS) $(GXXOPTS) $< -o $<.o && $(GXX) $<.o -o $@ $(GXXLDOPTS) 
+	-$(CPP_TOOL) -c -pipe $(OPTIONS) $(CPP_OPTS) $< -o $<.o && $(GXX) $<.o -o $@ 

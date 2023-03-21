@@ -1,5 +1,7 @@
 [general]
 
+makefile = 'makefiles/ubuntu.22.04.make'
+
 # run at each value N times
 runs = 6
 
@@ -13,16 +15,16 @@ sample = 0.2
 # build tools for benchmarks
 
 rust = 'rustc'
-cc = 'gcc-12'
-cxx = 'g++-12'
+c = 'gcc-12'
+cpp = 'g++-12'
 ada = 'gnatmake'
 
 [options]
 # flags for each tool
 
 rust = '-C opt-level=3 -C target-cpu=ivybridge -C codegen-units=1'
-cc = '-lm'
-cxx = '-mavx'
+c = '-lm'
+cpp = '-mavx'
 ada = '-march=ivybridge -gnatNp'
 
 [filters]

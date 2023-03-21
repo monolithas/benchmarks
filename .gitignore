@@ -1,4 +1,9 @@
+
+# ignore transient files
 tmp/*
 output/*
 logs/*
 reference/*
+
+# ignore log files
+*.log

@@ -23,7 +23,7 @@ ada = 'gnatmake'
 # flags for each tool
 
 rust = '-C opt-level=3 -C target-cpu=ivybridge -C codegen-units=1'
-c = '-lm'
+c = '-lm -fopenmp'
 cpp = '-mavx'
 ada = '-march=ivybridge -gnatNp'
 

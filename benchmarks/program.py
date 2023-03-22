@@ -29,11 +29,18 @@ class Program:
     
     def __params(self, config: dict) -> str:
         lang = self.language()
-        tool = config          \
+
+        # get regular options (build-time)
+        options = config       \
             .get('options',{}) \
             .get(lang,'')
         
-        return tool
+        # get extended options (link-time)
+        extended = config       \
+            .get('options',{}) \
+            .get(f"{lang}_ext",'')
+        
+        return (options,extended)
     
     def path(self) -> Path:
         return self.original
@@ -69,8 +76,9 @@ class Program:
         tool_var = f"{lang.upper()}_TOOL"
 
         # get the build arguments
-        opts = self.__params(config)
+        opts, exts = self.__params(config)
         opts_var = f"{lang.upper()}_OPTS"
+        opts_ext = f"{opts_var}_EXT"
 
         # delete everything in tmp
         shutil.rmtree(temp)
@@ -85,19 +93,21 @@ class Program:
         # set the environment variables
         os.environ[tool_var] = tool
         os.environ[opts_var] = opts
+        os.environ[opts_ext] = exts
 
         # change directory to tmp
         os.chdir(temp)
 
         # run make
-        subprocess.run([
+        result = subprocess.run([
             'make',
             '--makefile',
             basename(makefile),
             runfile
-        ],check=True,
-          stdout=subprocess.DEVNULL,
-          stderr=subprocess.DEVNULL)
+        ], capture_output=True, text=True)
+
+        stdout = result.stdout
+        stderr = result.stderr
 
         os.chdir(working)
 

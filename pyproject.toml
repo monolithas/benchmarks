@@ -8,10 +8,14 @@ authors = [ "Michael House <mjhouse@monolith.solutions>" ]
 keywords = ["benchmarks", "rust"]
 
 [tool.poetry.scripts]
-bencher = 'benchmarks.console:run'
+bench = 'benchmarks.bench:run'
+fetch = 'benchmarks.fetch:run'
 
 [tool.poetry.dependencies]
+python = ">=3.7,<4"
 psutil = "^5.9.4"
 toml = "^0.10.2"
 argparse = "^1.4.0"
+requests = "^2.28.2"
+beautifulsoup4 = "^4.12.0"
 

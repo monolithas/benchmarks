@@ -22,18 +22,25 @@ ada = 'gnatmake'
 [options]
 # flags for each tool
 
-rust = '-C opt-level=3 -C target-cpu=ivybridge -C codegen-units=1'
-c = '-lm -fopenmp'
-cpp = '-mavx'
+rust = '-C opt-level=3 -C target-cpu=ivybridge -C codegen-units=1 -L../data/dependencies/rust'
+rust_ext = ''
+
+c = '-march=ivybridge'
+c_ext = '-lm -fopenmp'
+
+cpp = '-mavx -march=ivybridge'
+cpp_ext = '-fopenmp'
+
 ada = '-march=ivybridge -gnatNp'
+ada_ext = ''
 
 [filters]
 
 # build only these directories (relative to root)
 directories = [
-    'programs/fannkuchredux',
+    'programs/mandelbrot',
     'programs/nbody',
-    'programs/regexdna',
+    'programs/fannkuchredux',
     'programs/spectralnorm'
 ]
 
@@ -48,28 +55,28 @@ ignore = []
 
 [values]
 
-fannkuchredux = [
-    9, 
-    10, 
-    11
-]
-
 nbody = [
     10000, 
-    20000, 
-    30000, 
-    40000, 
-    50000
+    20000
+    # 30000,
+    # 40000,
+    # 50000
 ]
 
-regexdna = [
-    10000
+fannkuchredux = [
+    9, 
+    10
+    # 11,
+    # 12,
+    # 13
 ]
 
 spectralnorm = [
     1000, 
-    2000, 
-    3000
+    2000
+    # 3000,
+    # 4000,
+    # 5000
 ]
 
 [data]

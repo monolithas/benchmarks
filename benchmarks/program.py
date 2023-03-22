@@ -18,6 +18,9 @@ class Program:
         self.original = Path(abspath(path))
         assert(self.original.exists())
 
+        self.__stdout = None
+        self.__stderr = None
+
     def __tool(self, config: dict) -> str:
         lang = self.language()
         tool = config        \
@@ -106,8 +109,8 @@ class Program:
             runfile
         ], capture_output=True, text=True)
 
-        stdout = result.stdout
-        stderr = result.stderr
+        self.__stdout = result.stdout
+        self.__stderr = result.stderr
 
         os.chdir(working)
 
@@ -125,6 +128,10 @@ class Program:
 
         # convert runfile path to an absolute path
         runfile = runfile.absolute()
+
+        if not runfile.exists():
+            print(self.__stdout)
+            print(self.__stderr)
 
         # verify that the run file exists
         assert runfile.exists(), f"File does not exist: {str(runfile)}"

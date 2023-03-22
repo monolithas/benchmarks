@@ -34,18 +34,51 @@ def install_cargo(name: str, version: str | None):
     # build the project with the dependency
     os.system(f'cargo build --release')
 
-    src = "target/release/deps/*"
-    dst = "../data/dependencies/rust/"
+    # src = "target/release/deps/*"
+    # dst = "../data/dependencies/rust/"
 
-    # copy the built dependencies to output
-    for file in glob.glob(src):
-        shutil.copy(file,dst)
+    # # copy the built dependencies to output
+    # for file in glob.glob(src):
+    #     shutil.copy(file,dst)
 
-    os.chdir('..')
+    # os.chdir('..')
 
-    # recreate the tmp directory
+    # # recreate the tmp directory
+    # shutil.rmtree('tmp')
+    # os.mkdir('tmp')
+
+def install_c(name: str, version: str | None):
+    # delete everything in tmp
     shutil.rmtree('tmp')
-    os.mkdir('tmp')
+
+    # create the output directory
+    Path('data/dependencies/c').mkdir(exist_ok=True)
+
+    # # create a temporary cargo project
+    # os.system('cargo new tmp')
+    # os.chdir('tmp')
+
+    # # add the dependency to the project
+    # if version:
+    #     os.system(f'cargo add {name}@{version}')
+    # else:
+    #     os.system(f'cargo add {name}')
+
+    # # build the project with the dependency
+    # os.system(f'cargo build --release')
+
+    # src = "target/release/deps/*"
+    # dst = "../data/dependencies/rust/"
+
+    # # copy the built dependencies to output
+    # for file in glob.glob(src):
+    #     shutil.copy(file,dst)
+
+    # os.chdir('..')
+
+    # # recreate the tmp directory
+    # shutil.rmtree('tmp')
+    # os.mkdir('tmp')
 
 def install(kind: str, name: str, version: str | None):
 

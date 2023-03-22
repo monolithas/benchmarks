@@ -1,0 +1,7 @@
+[options]
+initial = [ "-pipe", "-Wall", "-O3", "-fomit-frame-pointer", "-march=ivybridge", "-fopenmp", "spectralnorm.c", "-o", "spectralnorm.gcc_run", "-lm", "rm",]
+extended = []
+
+[dependencies]
+path = "PosixPath('data/dependencies/c')"
+names = []

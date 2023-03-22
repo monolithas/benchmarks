@@ -1,0 +1,7 @@
+[options]
+initial = [ "-pipe", "-Wall", "-O3", "-fomit-frame-pointer", "-march=ivybridge", "-pthread", "fannkuchredux.gcc-2.c", "-o", "fannkuchredux.gcc-2.gcc_run",]
+extended = []
+
+[dependencies]
+path = "PosixPath('data/dependencies/c')"
+names = []

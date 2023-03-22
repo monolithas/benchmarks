@@ -1,0 +1,7 @@
+[options]
+initial = [ "-pipe", "-Wall", "-O3", "-fomit-frame-pointer", "-march=ivybridge", "-pthread", "mandelbrot.gcc-3.c", "-o", "mandelbrot.gcc-3.gcc_run", "-lm", "rm",]
+extended = []
+
+[dependencies]
+path = "PosixPath('data/dependencies/c')"
+names = []

@@ -11,15 +11,17 @@
 import requests
 import argparse
 import bs4, os, shutil, glob
+import shlex
+import toml
 
 from pathlib import Path
 
-def install_cargo(name: str, version: str | None):
+def install_rust(name: str, version: str | None, location: str):
     # delete everything in tmp
     shutil.rmtree('tmp')
 
     # create the output directory
-    Path('data/dependencies/rust').mkdir(exist_ok=True)
+    Path(location).mkdir(exist_ok=True)
 
     # create a temporary cargo project
     os.system('cargo new tmp')
@@ -34,63 +36,107 @@ def install_cargo(name: str, version: str | None):
     # build the project with the dependency
     os.system(f'cargo build --release')
 
-    # src = "target/release/deps/*"
-    # dst = "../data/dependencies/rust/"
+    src = "target/release/deps/*.rlib"
+    dst = f"../{location}"
 
-    # # copy the built dependencies to output
-    # for file in glob.glob(src):
-    #     shutil.copy(file,dst)
+    # copy the built dependencies to output
+    for file in glob.glob(src):
+        shutil.copy(file,dst)
 
-    # os.chdir('..')
+    os.chdir('..')
 
-    # # recreate the tmp directory
-    # shutil.rmtree('tmp')
-    # os.mkdir('tmp')
-
-def install_c(name: str, version: str | None):
-    # delete everything in tmp
+    # recreate the tmp directory
     shutil.rmtree('tmp')
+    os.mkdir('tmp')
 
-    # create the output directory
-    Path('data/dependencies/c').mkdir(exist_ok=True)
+def install_c(name: str, version: str | None, location: str):
 
-    # # create a temporary cargo project
-    # os.system('cargo new tmp')
-    # os.chdir('tmp')
+    # install a library at the system level
 
-    # # add the dependency to the project
-    # if version:
-    #     os.system(f'cargo add {name}@{version}')
-    # else:
-    #     os.system(f'cargo add {name}')
+    # find the library
 
-    # # build the project with the dependency
-    # os.system(f'cargo build --release')
+    # move it to the dependencies location
 
-    # src = "target/release/deps/*"
-    # dst = "../data/dependencies/rust/"
+    raise NotImplementedError("This function hasn't been implemented")
 
-    # # copy the built dependencies to output
-    # for file in glob.glob(src):
-    #     shutil.copy(file,dst)
+def install_cpp(name: str, version: str | None, location: str):
+    raise NotImplementedError("This function hasn't been implemented")
 
-    # os.chdir('..')
+def install_ada(name: str, version: str | None, location: str):
+    raise NotImplementedError("This function hasn't been implemented")
 
-    # # recreate the tmp directory
-    # shutil.rmtree('tmp')
-    # os.mkdir('tmp')
-
-def install(kind: str, name: str, version: str | None):
+def install(kind: str, name: str, version: str | None, location: str):
 
     # get the requested installer
     installer = {
-        'cargo':install_cargo
+        'rust':install_rust,
+        'c':install_c,
+        'cpp':install_cpp,
+        'ada':install_ada
     }[kind]
 
     # call it with the given name and version
-    installer(name,version)
+    installer(name,version,location)
 
-def download(name: str):
+def options(text: str) -> tuple[list[str],list[str]]:
+    start = "MAKE:"
+    index = text.rfind(start)
+    chunk = text[index + len(start):].strip()
+
+    options = []
+    options_ext = []
+
+    position = 0
+
+    for (i, part) in enumerate(shlex.split(chunk)):
+        # skip the compiler path
+        if i == 0:
+            continue
+
+        # we're collecting before the '-o' flag
+        if position == 0:
+
+            flag = None
+
+            # get the preceding flag, if any
+            if len(options) > 0:
+                flag = options[-1]
+
+            # collect flags
+            if part.startswith('-'):
+                options.append(part)
+
+            # collect flag arguments
+            elif flag and flag.startswith('-') and '=' not in flag:
+                options.append(part)
+
+            # if not a flag or arg, advance
+            else:
+                position = 1
+
+        # we're skipping input and output files
+        elif position == 1:
+            if part.endswith('_run'):
+                position = 2
+
+        # we're collecting after the run file
+        elif position == 2:
+
+            # collect extended flags
+            if part.startswith('-'):
+                options_ext.append(part)
+
+            # exit after getting extended flags
+            else:
+                break
+
+        # should never happen
+        else:
+            break
+
+    return (options, options_ext)
+
+def download(name: str, bench: str, lang: str, count: str, local: str, dependencies: list[str]):
     url = f"https://benchmarksgame-team.pages.debian.net/benchmarksgame/program/{name}.html"
 
     # request the html for the page 
@@ -101,25 +147,10 @@ def download(name: str):
     soup = bs4.BeautifulSoup(page.text, 'html.parser')
 
     # get the section that has the code in it
-    section = soup.article.section.pre
-    code = section.text
+    sections = soup.article.findAll('section')
 
-    # create the appropriate name for the program
-    parts = name.split('-')
-    
-    bench = parts[0]
-    lang  = parts[1]
-    count = parts[2]
-    
-    # translate the names
-    if lang in ('gpp'):
-        lang = 'cpp'
-
-    if lang in ('gnat'):
-        lang = 'ada'
-
-    if lang in ('gcc','clang'):
-        lang = 'c'
+    code = sections[0].text
+    opts, opts_ext = options(sections[1].text)
 
     # build the output file and path
     file = f"{bench}-{count}.{lang}"
@@ -134,6 +165,47 @@ def download(name: str):
     # write the source code to the given file
     with open(path,'w') as f:
         f.write(code)
+
+    # build a configuration for the program
+    config = toml.dumps({
+        "options": {
+            "initial": opts,
+            "extended": opts_ext
+        },
+        "dependencies": {
+            "path": local,
+            "names": dependencies
+        }
+    })
+
+    # build a configuration path
+    path = path.with_suffix(path.suffix + '.toml')
+
+    # write the config to the given file
+    with open(path,'w') as f:
+        f.write(config)
+
+def parse(name: str) -> tuple[str,str,str]:
+    # split the name into parts
+    parts = name.split('-')
+    
+    # get each segment of the name
+    bench = parts[0]
+    lang  = parts[1]
+    count = parts[2]
+    
+    # translate the language ids
+    if lang in ('gpp'):
+        lang = 'cpp'
+
+    if lang in ('gnat'):
+        lang = 'ada'
+
+    if lang in ('gcc','clang'):
+        lang = 'c'
+
+    # return as a tuple
+    return (bench,lang,count)
 
 def run():
     # define and parse command line arguments
@@ -151,18 +223,45 @@ def run():
         dest='dependencies', 
         nargs='+',
         default=[],
-        help='Space delimited dependencies in the format "<type>:<name>:<version>"')
+        help='Space delimited dependencies in the format "<language>:<name>:<version>"')
+    
+    parser.add_argument('-r','--retry', 
+        dest='retry',
+        action='store',
+        default=1,
+        help='Number of times to retry downloading the benchmark page')
     
     # parse the command line arguments
     args = vars(parser.parse_args())
+    path = os.getcwd()
+
+    dependencies = args['dependencies']
+    retry = int(args['retry'])
+
+    assert retry > 0, "Must have positive value for retry"
+
+    # split and interprete the name
+    name = args['name']
+    bench, lang, count = parse(name)
+
+    # create a deps directory if it doesn't exist
+    deps_path = Path(f"data/dependencies/{lang}/")
+    deps_path.mkdir(exist_ok=True)
+
+    # create the bench directory if it doesn't exist
+    bench_path = Path(f"programs/{bench}")
+    bench_path.mkdir(exist_ok=True)
+
+    # TODO: Store a list of downloaded dependencies somewhere so we don't download the same ones twice
+    
 
     # install the dependencies if necessary
-    for dep in args['dependencies']:
+    for dep in dependencies:
         parts = dep.split(':')
 
         # split up the triplets
         kind = parts[0]
-        name = parts[1]
+        library = parts[1]
         version = None
 
         # version number is optional
@@ -170,7 +269,19 @@ def run():
             version = parts[2]
 
         # install the dependency locally
-        install(kind,name,version)
+        install(kind,library,version,deps_path)
+
+    os.chdir(path)
 
     # download the benchmark locally
-    download(args['name'])
+    succeeded = False
+    for _ in range(retry):
+        try:
+            download(name,bench,lang,count,deps_path,dependencies)
+            succeeded = True
+            break
+        except:
+            pass
+
+    if not succeeded:
+        raise RuntimeError(f"Failed to download html after {retry} tries") 

@@ -1,3 +1,8 @@
+
+
+source code
+
+
 // The Computer Language Benchmarks Game
 // https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
 //
@@ -66,7 +71,7 @@ struct Planet {
 }
 
 fn advance(bodies: &mut [Planet;N_BODIES], dt: f64, steps: i32) {
-    for _ in 0..steps {
+    for _ in (0..steps) {
         let mut b_slice: &mut [_] = bodies;
         loop {
             let bi = match shift_mut_ref(&mut b_slice) {
@@ -157,3 +162,4 @@ fn shift_mut_ref<'a, T>(r: &mut &'a mut [T]) -> Option<&'a mut T> {
     *r = t;
     Some(&mut h[0])
 }
+    

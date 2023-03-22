@@ -1,0 +1,7 @@
+[options]
+initial = [ "-c", "-pipe", "-O3", "-fomit-frame-pointer", "-march=ivybridge", "-fopenmp", "-O0", "spectralnorm.gpp-5.c++", "-o", "spectralnorm.gpp-5.c++.o",]
+extended = [ "-fopenmp",]
+
+[dependencies]
+path = "PosixPath('data/dependencies/cpp')"
+names = []

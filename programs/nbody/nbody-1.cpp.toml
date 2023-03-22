@@ -1,0 +1,7 @@
+[options]
+initial = [ "-c", "-pipe", "-O3", "-fomit-frame-pointer", "-march=ivybridge",]
+extended = []
+
+[dependencies]
+path = "PosixPath('data/dependencies/cpp')"
+names = []

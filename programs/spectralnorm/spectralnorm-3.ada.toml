@@ -1,0 +1,7 @@
+[options]
+initial = [ "-r", "-w", "spectralnorm.gnat-3.gnat",]
+extended = []
+
+[dependencies]
+path = "PosixPath('data/dependencies/ada')"
+names = []

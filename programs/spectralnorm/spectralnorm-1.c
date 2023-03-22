@@ -1,3 +1,8 @@
+
+
+source code
+
+
 /* The Computer Language Benchmarks Game
  * https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
  *
@@ -49,3 +54,5 @@ int main(int argc, char *argv[])
   printf("%0.9f\n",sqrt(vBv/vv));
   return 0;
 }
+
+    

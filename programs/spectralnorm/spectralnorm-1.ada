@@ -1,3 +1,8 @@
+
+
+source code
+
+
 -----------------------------------------
 -- The Computer Language Benchmarks Game
 -- https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
@@ -92,3 +97,9 @@ begin
    Long_Io.Put(Item => Sqrt(Vbv/Vv), Fore => 1, Aft => 9, Exp => 0);
    Ada.Text_Io.New_Line;
 end SpectralNorm;
+
+
+
+
+
+    

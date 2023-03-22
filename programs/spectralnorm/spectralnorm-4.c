@@ -1,3 +1,8 @@
+
+
+source code
+
+
 /* The Computer Language Benchmarks Game
  * https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
  *
@@ -253,3 +258,4 @@ main(int argc, char *argv[])
     printf("%.9f\n", spectral_game(N));
     return 0;
 }
+    

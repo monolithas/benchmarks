@@ -3,5 +3,6 @@ initial = [ "-C", "opt-level=3", "-C", "target-cpu=ivybridge", "-C", "codegen-un
 extended = []
 
 [dependencies]
-path = "PosixPath('data/dependencies/rust')"
+path = "data/dependencies/rust"
 names = []
+files = []

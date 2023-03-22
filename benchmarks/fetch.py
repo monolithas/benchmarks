@@ -14,7 +14,32 @@ import bs4, os, shutil, glob
 import shlex
 import toml
 
+from dataclasses import dataclass
 from pathlib import Path
+from benchmarks.utilities import read_list, write_list
+
+@dataclass
+class OptionState:
+    stage: int
+    index: int
+    options: list[str]
+    extended: list[str]
+    item: str | None
+    dependencies: list[str]
+
+    def active(self) -> list[str]:
+        if self.stage > 0:
+            return self.extended
+        else:
+            return self.options
+
+    def previous(self) -> str | None:
+        opts = self.active()
+        if len(opts) > 0:
+            return opts[-1]
+
+    def advance(self):
+        self.stage += 1
 
 def install_rust(name: str, version: str | None, location: str):
     # delete everything in tmp
@@ -50,13 +75,6 @@ def install_rust(name: str, version: str | None, location: str):
     os.mkdir('tmp')
 
 def install_c(name: str, version: str | None, location: str):
-
-    # install a library at the system level
-
-    # find the library
-
-    # move it to the dependencies location
-
     raise NotImplementedError("This function hasn't been implemented")
 
 def install_cpp(name: str, version: str | None, location: str):
@@ -78,63 +96,200 @@ def install(kind: str, name: str, version: str | None, location: str):
     # call it with the given name and version
     installer(name,version,location)
 
-def options(text: str) -> tuple[list[str],list[str]]:
+def options_rust_param(state: OptionState) -> OptionState:
+    # skip the compiler path
+    if state.index == 0:
+        return state
+
+    # we're collecting before the output/input files
+    if state.stage == 0:
+        prev = state.previous()
+
+        # check if the current item is an argument
+        if prev and prev.startswith('-') and len(prev) == 2:
+
+            # ignore linker flags and paths
+            if prev == '-L':
+                state.options.pop()
+            else:
+                state.options.append(state.item)
+
+        # check if the current item is an extern
+        elif prev == '--extern':
+            state.options.pop()
+            file = Path(state.item).name
+            state.dependencies.append(file)
+
+        # check if the current item is a flag
+        elif state.item.startswith('-'):
+            state.options.append(state.item)
+
+        # advance to the next stage
+        else:
+            state.advance()
+    
+    # we're skipping the output/input files
+    elif state.stage == 1:
+        if state.item.endswith('_run'):
+            state.advance()
+
+    # we're collecting after the output/input files
+    elif state.stage == 2:
+
+        # collect extended flags
+        if state.item.startswith('-'):
+            state.extended.append(state.item)
+
+        # signal completed
+        else:
+            state = None
+
+    # signal completed
+    else:
+        state = None
+
+    # we're finished
+    return state
+
+def options_cpp_param(state: OptionState) -> OptionState:
+    # skip the compiler path
+    if state.index == 0:
+        return state
+
+    # we're collecting before the output/input files
+    if state.stage == 0:
+        prev = state.previous()
+
+        # check if the current item is an argument
+        if prev and prev.startswith('-') and len(prev) == 2:
+
+            # ignore linker flags and paths
+            if prev == '-L':
+                state.options.pop()
+            else:
+                state.options.append(state.item)
+
+        # check if the current item is a flag
+        elif state.item.startswith('-'):
+            state.options.append(state.item)
+
+        # advance to the next stage
+        else:
+            state.advance()
+    
+    # we're skipping the output/input files
+    elif state.stage == 1:
+        if state.item.endswith('_run'):
+            state.advance()
+
+    # we're collecting after the output/input files
+    elif state.stage == 2:
+
+        # collect extended flags
+        if state.item.startswith('-'):
+            state.extended.append(state.item)
+
+        # signal completed
+        else:
+            state = None
+
+    # signal completed
+    else:
+        state = None
+
+    # we're finished
+    return state
+
+def options_c_param(state: OptionState) -> OptionState:
+    return options_cpp_param(state)
+
+def options_ada_param(state: OptionState) -> OptionState:
+    # skip the compiler path
+    if state.index == 0:
+        return state
+
+    # we're skipping everything before gnatmake
+    if state.stage == 0:
+        if 'gnatmake' in state.item:
+            state.advance()
+
+    # we're collecting before the output/input files
+    elif state.stage == 1:
+        prev = state.previous()
+        
+        # check if the current item is an argument
+        if prev and prev.startswith('-') and len(prev) == 2:
+            state.options.append(state.item)
+
+        # check if the current item is a flag
+        elif state.item.startswith('-'):
+
+            # ignore the -f flag used for input file
+            if state.item != '-f':
+                state.options.append(state.item)
+
+        # advance to the next stage
+        else:
+            state.advance()
+    
+    # we're skipping the output/input files
+    elif state.stage == 2:
+        if state.item.endswith('_run'):
+            state.advance()
+
+    # we're collecting after the output/input files
+    elif state.stage == 3:
+
+        # collect extended flags
+        if state.item.startswith('-'):
+            state.extended.append(state.item)
+
+        # signal completed
+        else:
+            state = None
+
+    # signal completed
+    else:
+        state = None
+
+    # we're finished
+    return state
+
+def options(text: str, lang: str) -> OptionState:
     start = "MAKE:"
     index = text.rfind(start)
     chunk = text[index + len(start):].strip()
 
-    options = []
-    options_ext = []
+    # state machine used ofr parsing params
+    state = OptionState(
+        stage = 0,
+        index = 0,
+        options = [],
+        extended = [],
+        item = None,
+        dependencies = []
+    )
 
-    position = 0
+    # iterate through all params until finished
+    for (i, item) in enumerate(shlex.split(chunk)):
+        state.index = i
+        state.item = item
 
-    for (i, part) in enumerate(shlex.split(chunk)):
-        # skip the compiler path
-        if i == 0:
-            continue
+        # parse a single param by language
+        tmp = {
+            "rust": options_rust_param,
+            "c": options_c_param,
+            "cpp": options_cpp_param,
+            "ada": options_ada_param
+        }[lang](state)
 
-        # we're collecting before the '-o' flag
-        if position == 0:
-
-            flag = None
-
-            # get the preceding flag, if any
-            if len(options) > 0:
-                flag = options[-1]
-
-            # collect flags
-            if part.startswith('-'):
-                options.append(part)
-
-            # collect flag arguments
-            elif flag and flag.startswith('-') and '=' not in flag:
-                options.append(part)
-
-            # if not a flag or arg, advance
-            else:
-                position = 1
-
-        # we're skipping input and output files
-        elif position == 1:
-            if part.endswith('_run'):
-                position = 2
-
-        # we're collecting after the run file
-        elif position == 2:
-
-            # collect extended flags
-            if part.startswith('-'):
-                options_ext.append(part)
-
-            # exit after getting extended flags
-            else:
-                break
-
-        # should never happen
+        # update and continue or exit
+        if tmp != None:
+            state = tmp
         else:
             break
 
-    return (options, options_ext)
+    return state
 
 def download(name: str, bench: str, lang: str, count: str, local: str, dependencies: list[str]):
     url = f"https://benchmarksgame-team.pages.debian.net/benchmarksgame/program/{name}.html"
@@ -149,8 +304,8 @@ def download(name: str, bench: str, lang: str, count: str, local: str, dependenc
     # get the section that has the code in it
     sections = soup.article.findAll('section')
 
-    code = sections[0].text
-    opts, opts_ext = options(sections[1].text)
+    code = sections[0].pre.text
+    result = options(sections[1].text,lang)
 
     # build the output file and path
     file = f"{bench}-{count}.{lang}"
@@ -169,12 +324,13 @@ def download(name: str, bench: str, lang: str, count: str, local: str, dependenc
     # build a configuration for the program
     config = toml.dumps({
         "options": {
-            "initial": opts,
-            "extended": opts_ext
+            "initial": result.options,
+            "extended": result.extended
         },
         "dependencies": {
-            "path": local,
-            "names": dependencies
+            "path": str(local),
+            "names": dependencies,
+            "files": result.dependencies
         }
     })
 
@@ -253,10 +409,14 @@ def run():
     bench_path.mkdir(exist_ok=True)
 
     # TODO: Store a list of downloaded dependencies somewhere so we don't download the same ones twice
-    
+    deps_list = read_list("output/config/dependencies.list")
 
     # install the dependencies if necessary
     for dep in dependencies:
+
+        if dep in deps_list:
+            continue
+
         parts = dep.split(':')
 
         # split up the triplets
@@ -271,6 +431,9 @@ def run():
         # install the dependency locally
         install(kind,library,version,deps_path)
 
+        deps_list.append(dep)
+
+    write_list("output/config/dependencies.list",deps_list)
     os.chdir(path)
 
     # download the benchmark locally
@@ -283,5 +446,6 @@ def run():
         except:
             pass
 
+    # check that the download succeeded
     if not succeeded:
-        raise RuntimeError(f"Failed to download html after {retry} tries") 
+        raise RuntimeError(f"Download failed: '{name}' ({retry} tries)") 

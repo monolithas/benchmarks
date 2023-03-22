@@ -1,30 +1,9 @@
 import toml
 import argparse
-import logging
 
 from pathlib import Path
 from benchmarks.program import Program
-
-def setup_logger(level: str, path: str = None):
-    fmt = '%(asctime)s - %(levelname)s - %(module)s - %(message)s'
-    formatter = logging.Formatter(fmt=fmt)
-
-    # set the log level from command line
-    logger = logging.getLogger()
-    logger.setLevel(level.upper())
-
-    # add a stream handler that logs to terminal
-    term_handler = logging.StreamHandler()
-    term_handler.setFormatter(formatter)
-    logger.addHandler(term_handler)
-
-    # if a path is given, add a file handler
-    if path:
-        file_handler = logging.FileHandler(path)
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
-
-    return logger
+from benchmarks.utilities import setup_logger
 
 def find_programs(config: dict) -> list[Program]:
     """
@@ -44,7 +23,7 @@ def find_programs(config: dict) -> list[Program]:
     # get initial list of programs
     for path in initial:
         for item in Path(path).iterdir():
-            if item.is_file():
+            if item.is_file() and item.suffix != '.toml':
                 result.append(item)
 
     # include additional programs
@@ -125,7 +104,6 @@ def run():
     runs    = int(general.get('runs','1'))
     timeout = int(general.get('timeout','3600'))
     sample  = int(general.get('sample','0.2'))
-
 
     # for each program, build and run the benchmark
     for program in programs:

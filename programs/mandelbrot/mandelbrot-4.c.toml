@@ -1,7 +1,8 @@
 [options]
-initial = [ "-pipe", "-Wall", "-O3", "-fomit-frame-pointer", "-march=ivybridge", "-fopenmp", "mandelbrot.gcc-4.c", "-o", "mandelbrot.gcc-4.gcc_run",]
+initial = [ "-pipe", "-Wall", "-O3", "-fomit-frame-pointer", "-march=ivybridge", "-fopenmp",]
 extended = []
 
 [dependencies]
-path = "PosixPath('data/dependencies/c')"
+path = "data/dependencies/c"
 names = []
+files = []

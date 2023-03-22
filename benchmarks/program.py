@@ -6,10 +6,23 @@ import shutil
 import logging
 import subprocess
 import os
-import psutil
+import toml
 import time
+import copy
 
 log = logging.getLogger()
+
+DEFAULTS: dict = {
+    "options": {
+        "initial": [],
+        "extended": []
+    },
+    "dependencies": {
+        "path": None,
+        "names": [],
+        "files": []
+    }
+}
 
 class Program:
     
@@ -20,6 +33,33 @@ class Program:
 
         self.__stdout = None
         self.__stderr = None
+
+    def __toml(self, config: dict) -> dict:
+        opts, exts = self.__params(config)
+
+        # get a path to the toml file 
+        base = self.original
+        path = base.with_suffix(base.suffix + '.toml')
+
+        result = copy.deepcopy(DEFAULTS)
+
+        # merge the default config with the loaded config
+        if path.exists():
+            result.update(toml.load(path))
+
+        initial = result['options']['initial']
+        extended = result['options']['extended']
+
+        # combine the global options and extended options
+        initial.append(opts)
+        extended.append(exts)
+
+        # remove duplicate options and update config
+        result['options']['initial'] = initial
+        result['options']['extended'] = extended
+
+        # return the configuration
+        return result
 
     def __tool(self, config: dict) -> str:
         lang = self.language()
@@ -79,7 +119,7 @@ class Program:
         tool_var = f"{lang.upper()}_TOOL"
 
         # get the build arguments
-        opts, exts = self.__params(config)
+        cfg = self.__toml(config)
         opts_var = f"{lang.upper()}_OPTS"
         opts_ext = f"{opts_var}_EXT"
 
@@ -95,8 +135,8 @@ class Program:
 
         # set the environment variables
         os.environ[tool_var] = tool
-        os.environ[opts_var] = opts
-        os.environ[opts_ext] = exts
+        os.environ[opts_var] = ' '.join(cfg['options']['initial'])
+        os.environ[opts_ext] = ' '.join(cfg['options']['extended'])
 
         # change directory to tmp
         os.chdir(temp)

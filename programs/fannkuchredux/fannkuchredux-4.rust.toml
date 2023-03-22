@@ -1,7 +1,8 @@
 [options]
-initial = [ "-C", "opt-level=3", "-C", "target-cpu=ivybridge", "-C", "codegen-units=1", "-L", "/opt/src/rust-libs",]
+initial = [ "-C", "opt-level=3", "-C", "target-cpu=ivybridge", "-C", "codegen-units=1",]
 extended = []
 
 [dependencies]
-path = "PosixPath('data/dependencies/rust')"
-names = [ "rust:rayon",]
+path = "data/dependencies/rust"
+names = [ "rust:rayon:1.7.0",]
+files = []

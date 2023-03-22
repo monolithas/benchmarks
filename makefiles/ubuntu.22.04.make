@@ -54,4 +54,4 @@ BENCH   := $(firstword $(subst -, ,$(TARGET)))
 # cpp
 
 %.cpp_run: %.cpp
-	-$(CPP_TOOL) -c -pipe $(OPTIONS) $(CPP_OPTS) $< -o $<.o && $(GXX) $<.o -o $@ $(CPP_OPTS_EXT)
+	-$(CPP_TOOL) $(CPP_OPTS) $< -o $<.o && $(CPP_TOOL) $<.o -o $@ $(CPP_OPTS_EXT)

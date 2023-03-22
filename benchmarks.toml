@@ -22,16 +22,16 @@ ada = 'gnatmake'
 [options]
 # flags for each tool
 
-rust = '-C opt-level=3 -C target-cpu=ivybridge -C codegen-units=1 -L../data/dependencies/rust'
+rust = '-L../data/dependencies/rust'
 rust_ext = ''
 
-c = '-march=ivybridge'
-c_ext = '-lm -fopenmp'
+c = '-L../data/dependencies/c'
+c_ext = ''
 
-cpp = '-mavx -march=ivybridge'
-cpp_ext = '-fopenmp'
+cpp = '-L../data/dependencies/cpp'
+cpp_ext = ''
 
-ada = '-march=ivybridge -gnatNp'
+ada = '-L../data/dependencies/ada'
 ada_ext = ''
 
 [filters]

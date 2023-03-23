@@ -11,6 +11,7 @@ keywords = ["benchmarks", "rust"]
 bench = 'benchmarks.bench:run'
 fetch = 'benchmarks.fetch:run'
 clean = 'benchmarks.clean:run'
+display = 'benchmarks.display:run'
 
 [tool.poetry.dependencies]
 python = ">=3.7,<4"

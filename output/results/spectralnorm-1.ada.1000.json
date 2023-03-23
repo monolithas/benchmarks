@@ -1,0 +1,75 @@
+{
+    "bench": "spectralnorm-1.ada",
+    "input": 1000.0,
+    "average_runtime": 202155.66666666666,
+    "average_cpu_load": 0.0,
+    "average_ram_load": 0.0,
+    "run_results": [
+        {
+            "index": 0,
+            "input": 1000.0,
+            "runtime": 388842,
+            "start_time": 1679543221413917018,
+            "stop_time": 1679543221414305860,
+            "ram_samples": [],
+            "cpu_samples": [],
+            "average_cpu_load": 0.0,
+            "average_ram_load": 0.0
+        },
+        {
+            "index": 1,
+            "input": 1000.0,
+            "runtime": 154475,
+            "start_time": 1679543221414432471,
+            "stop_time": 1679543221414586946,
+            "ram_samples": [],
+            "cpu_samples": [],
+            "average_cpu_load": 0.0,
+            "average_ram_load": 0.0
+        },
+        {
+            "index": 2,
+            "input": 1000.0,
+            "runtime": 154274,
+            "start_time": 1679543221414694140,
+            "stop_time": 1679543221414848414,
+            "ram_samples": [],
+            "cpu_samples": [],
+            "average_cpu_load": 0.0,
+            "average_ram_load": 0.0
+        },
+        {
+            "index": 3,
+            "input": 1000.0,
+            "runtime": 178170,
+            "start_time": 1679543221414953705,
+            "stop_time": 1679543221415131875,
+            "ram_samples": [],
+            "cpu_samples": [],
+            "average_cpu_load": 0.0,
+            "average_ram_load": 0.0
+        },
+        {
+            "index": 4,
+            "input": 1000.0,
+            "runtime": 145617,
+            "start_time": 1679543221415241775,
+            "stop_time": 1679543221415387392,
+            "ram_samples": [],
+            "cpu_samples": [],
+            "average_cpu_load": 0.0,
+            "average_ram_load": 0.0
+        },
+        {
+            "index": 5,
+            "input": 1000.0,
+            "runtime": 191556,
+            "start_time": 1679543221415495949,
+            "stop_time": 1679543221415687505,
+            "ram_samples": [],
+            "cpu_samples": [],
+            "average_cpu_load": 0.0,
+            "average_ram_load": 0.0
+        }
+    ]
+}

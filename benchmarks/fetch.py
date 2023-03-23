@@ -1,22 +1,15 @@
-# this script downloads a benchmarksgame report page and 
-# installs it locally.
-
-# NAME="nbody-gpp-0"
-
-# URL=https://benchmarksgame-team.pages.debian.net/benchmarksgame/program/${NAME}.html
-# PAGE=$(wget ${URL} -q -O -)
-
-# echo $PAGE
-
 import requests
 import argparse
 import bs4, os, shutil, glob
 import shlex
 import toml
+import logging
 
 from dataclasses import dataclass
 from pathlib import Path
 from benchmarks.utilities import read_list, write_list
+
+log = logging.getLogger()
 
 @dataclass
 class OptionState:
@@ -440,10 +433,12 @@ def run():
     succeeded = False
     for _ in range(retry):
         try:
+            log.info(f"downloading {name}")
             download(name,bench,lang,count,deps_path,dependencies)
             succeeded = True
             break
         except:
+            log.warn(f"failed to download")
             pass
 
     # check that the download succeeded

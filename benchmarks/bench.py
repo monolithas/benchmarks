@@ -2,7 +2,9 @@ import toml
 import argparse
 
 from pathlib import Path
+
 from benchmarks.program import Program
+from benchmarks.result import SummaryResult
 from benchmarks.utilities import setup_logger
 
 def find_programs(config: dict) -> list[Program]:
@@ -96,7 +98,6 @@ def run():
 
     # find all programs for the benchmark run
     programs = find_programs(config)
-    results = []
 
     # get benchmark settings for program runs
     general = config.get('general',{})
@@ -104,6 +105,16 @@ def run():
     runs    = int(general.get('runs','1'))
     timeout = int(general.get('timeout','3600'))
     sample  = int(general.get('sample','0.2'))
+
+    # build paths to the result directories
+    output_path = Path('output/')
+    result_path = output_path / 'results'
+
+    # create directories if they don't exist
+    output_path.mkdir(exist_ok=True)
+    result_path.mkdir(exist_ok=True)
+
+    series = []
 
     # for each program, build and run the benchmark
     for program in programs:
@@ -117,19 +128,29 @@ def run():
 
         # run the program for each of the inputs
         for input in inputs:
+            
+            # get the series results
+            result = program.series(
+                input,
+                runs
+            )
 
-            # run the program multiple times and average
-            results = []
-            for _ in range(runs):
-                results.append(program.run(input))
+            # build the output json path and write
+            data = result.json(indent=4)
+            path = result_path / result.bench
+            key  = f"{path.suffix}.{input}.json"
+            path = path.with_suffix(key)
 
-            # display results
-            times = [r.runtime/1000000 for r in results]
-            log.debug(f" avg={sum(times)/runs} ms, all={times}")
+            with open(path,'w') as f:
+                f.write(data)
 
+            # save the series result for summarization
+            series.append(result)
 
-        # results.append(program.result())
+    # summarize the benchmarks
+    summary = SummaryResult(series)
+    summary_path = output_path / 'summary.json'
 
-    # write the results to an output file
-    for result in results:
-        pass
+    # write the summary to the output directory
+    with open(summary_path,'w') as f:
+        f.write(summary.json(indent=4))

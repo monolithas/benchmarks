@@ -409,7 +409,7 @@ def run():
     bench_path.mkdir(exist_ok=True)
 
     # TODO: Store a list of downloaded dependencies somewhere so we don't download the same ones twice
-    deps_list = read_list("output/config/dependencies.list")
+    deps_list = read_list("output/dependencies.list")
 
     # install the dependencies if necessary
     for dep in dependencies:
@@ -433,7 +433,7 @@ def run():
 
         deps_list.append(dep)
 
-    write_list("output/config/dependencies.list",deps_list)
+    write_list("output/dependencies.list",deps_list)
     os.chdir(path)
 
     # download the benchmark locally

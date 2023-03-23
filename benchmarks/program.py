@@ -1,6 +1,6 @@
 from os.path import abspath, basename
 from pathlib import Path
-from benchmarks.result import Result
+from benchmarks.result import RunResult, SeriesResult
 
 import shutil
 import logging
@@ -154,9 +154,9 @@ class Program:
 
         os.chdir(working)
 
-    def run(self, input: int | float):
+    def run(self, input: int | float, index: int) -> RunResult:
         log.debug(f"Running program {self.name()}")
-        result = Result(0,0,0)
+        result = RunResult(index=index,input=input)
 
         # get various paths and names for build
         working = os.getcwd()
@@ -176,7 +176,8 @@ class Program:
         # verify that the run file exists
         assert runfile.exists(), f"File does not exist: {str(runfile)}"
 
-        start = time.time_ns()
+        # start the run timer
+        result.start_timer()
 
         # start the process
         process = subprocess.Popen(
@@ -184,8 +185,17 @@ class Program:
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL)
 
-        # calculate final run time of the program
-        result.runtime = time.time_ns() - start
+        # stop the run timer
+        result.stop_timer()
 
         os.chdir(working)
         return result
+    
+    def series(self, input: int | float, count: int = 1) -> SeriesResult:
+        series = SeriesResult(bench=self.name(),input=input)
+
+        for i in range(count):
+            series.append_result(self.run(input,i))
+
+        return series
+        

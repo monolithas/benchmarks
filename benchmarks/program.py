@@ -1,6 +1,7 @@
 from os.path import abspath, basename
 from pathlib import Path
 from benchmarks.result import RunResult, SeriesResult
+from benchmarks.measure import measure
 
 import shutil
 import logging
@@ -177,41 +178,7 @@ class Program:
         # verify that the run file exists
         assert runfile.exists(), f"File does not exist: {str(runfile)}"
 
-        # check the cpu usage
-        psutil.cpu_percent(0,percpu=True) 
-
-        from math import trunc
-
-        # start the run timer
-        result.start_timer()
-
-        # start the process
-        process = subprocess.Popen(
-            [str(runfile),str(input)],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL)
-
-        rusage = os.wait3(0)
-
-        # stop the run timer
-        result.stop_timer()
-
-        # check the cpu usage
-        elapsed = result.runtime_s()
-        load = psutil.cpu_percent(0,percpu=True) 
-
-        userSysTime = rusage[2][0] + rusage[2][1]    
-        maxMem = rusage[2][2] 
-        cpuLoad = ("% ".join([str(trunc(percent)) for percent in load]))+"%"
-        elapsed = result.runtime_s()
-        notIdle = sum([elapsed*percent/100.0 for percent in load])
-
-
-        log.warn(f"     userSysTime: {userSysTime}")  
-        log.warn(f"     maxMem: {maxMem}")  
-        log.warn(f"     cpuLoad: {cpuLoad}")  
-        log.warn(f"     elapsed: {elapsed}")  
-        log.warn(f"     notIdle: {notIdle}")  
+        result = measure(index, runfile, input, timeout=3600)
 
         os.chdir(working)
         return result

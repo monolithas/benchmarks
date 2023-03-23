@@ -135,6 +135,10 @@ def run():
                 runs
             )
 
+            if not result:
+                log.warn(f"No result for {program.name()} (input={input})")
+                continue
+
             # build the output json path and write
             data = result.json(indent=4)
             path = result_path / result.bench

@@ -29,11 +29,20 @@ def setup_logger(level: str, path: str = None):
 
     return logger
 
-def clear(path: Path):
+def clear(path: Path, keep: list[str] = []):
     for root, _, files in os.walk(path):
         for name in files:
-            if not name.startswith('.'):
-                os.unlink(os.path.join(root, name))
+
+            # skip delete of listed files
+            if name in keep:
+                continue
+
+            # skip delete of hidden files
+            if name.startswith('.'):
+                continue    
+
+            # delete the file
+            os.unlink(os.path.join(root, name))
 
 def clear_dependencies(path: Path = DEFAULT_DEP_PATH):
     clear(path)
@@ -42,7 +51,7 @@ def clear_programs(path: Path = DEFAULT_PROG_PATH):
     clear(path)
 
 def clear_output(path: Path = DEFAULT_OUT_PATH):
-    clear(path)
+    clear(path, keep=[ 'dependencies.list' ])
 
 def read_list(path: Path | str) -> list[str]:
     path = Path(path)

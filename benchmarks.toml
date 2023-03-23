@@ -38,10 +38,10 @@ ada_ext = ''
 
 # build only these directories (relative to root)
 directories = [
-    'programs/mandelbrot',
+    # 'programs/mandelbrot',
     'programs/nbody',
-    'programs/fannkuchredux',
-    'programs/spectralnorm'
+    # 'programs/fannkuchredux',
+    # 'programs/spectralnorm'
 ]
 
 # include additional files (relative to root)

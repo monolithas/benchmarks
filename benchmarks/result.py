@@ -1,15 +1,23 @@
+import os
 import time
+import psutil
+import logging
 from pydantic import BaseModel
 from datetime import datetime
+
+log = logging.getLogger()
 
 class RunResult(BaseModel):
     """The result of a single run with one input"""
 
+    # execution order
     index: int           # position
-    input: float = 0.0   # argument to program
-    runtime: float = 0.0 # in ns
+
+    # input value at execution
+    input: float = 0.0
 
     # run timestamps
+    run_time: float = 0.0 # in ns
     start_time: int = 0
     stop_time: int = 0
 
@@ -17,15 +25,36 @@ class RunResult(BaseModel):
     ram_samples: list[float] = []
     cpu_samples: list[float] = []
 
-    average_cpu_load: float = 0.0 # in percent
-    average_ram_load: float = 0.0 # in kb
+    average_cpu_busy: float = 0.0
+
+    # resource usage info
+    user_cpu_time: float = 0.0  # user CPU time used
+    sys_cpu_time: float = 0.0   # system CPU time used
+    total_cpu_time: float = 0.0 # total CPU time used
+
+    max_rss: int = 0           # maximum resident set size
+    exit_code: int = 0         # the process exit code
+
+    # utility flags
+    failed: bool = False
+
+    def start_cpu_check(self):
+        psutil.cpu_percent(percpu=True)
+        psutil.cpu_percent(percpu=True)
+
+    def stop_cpu_check(self):
+        s = psutil.cpu_percent(percpu=True) 
+        self.cpu_samples = s
 
     def start_timer(self):
         self.start_time = time.time_ns()
 
     def stop_timer(self):
         self.stop_time = time.time_ns()
-        self.runtime = self.stop_time - self.start_time
+        self.run_time = self.stop_time - self.start_time
+
+    def elapsed(self) -> float:
+        return self.runtime_s()
 
     def runtime_s(self) -> float:
         return self.runtime_ms() / 1000000
@@ -34,26 +63,27 @@ class RunResult(BaseModel):
         return self.runtime_ns() / 1000000
 
     def runtime_ns(self) -> float:
-        return self.runtime
+        return self.run_time
 
-    def add_ram_sample(self, ram: float):
-        self.ram_samples.append(ram)
-        self.calculate_ram_load()
+    def calculate_cpu_load(self):
+        runtime = self.runtime_s()
+        scaled = [runtime*percent/100.0 for percent in self.cpu_samples]
+        self.average_cpu_busy = sum(scaled)
 
-    def add_cpu_sample(self, cpu: float):
-        self.cpu_samples.append(cpu)
+    def calculate_mem_load(self):
+        usage = os.wait3(0)
+        self.user_cpu_time = usage[2][0] # user CPU time used
+        self.sys_cpu_time = usage[2][1]  # system CPU time used
+        self.max_rss = usage[2][2]       # maximum resident set size
+        self.exit_code = usage[1]        # the process error code
+        self.total_cpu_time = self.user_cpu_time + self.sys_cpu_time
+
+    def calculate(self):
         self.calculate_cpu_load()
-
-    def calculate_cpu_load(self) -> float:
-        self.average_cpu_load = sum(self.cpu_samples) / len(self.cpu_samples)
-        return self.average_cpu_load
-
-    def calculate_ram_load(self) -> float:
-        self.average_ram_load = sum(self.ram_samples) / len(self.ram_samples)
-        return self.average_ram_load
+        self.calculate_mem_load()
 
     def __repr__(self) -> str:
-        return f"<RunResult runtime={self.runtime_ms()}>"
+        return f"<RunResult run_time={self.runtime_ms()}>"
     
     def __str__(self) -> str:
         return self.__repr__()
@@ -64,7 +94,7 @@ class SeriesResult(BaseModel):
     bench: str
     input: float = 0
     average_runtime: int = 0
-    average_cpu_load: int = 0
+    average_cpu_busy: int = 0
     average_ram_load: int = 0
     run_results: list[RunResult] = []
 
@@ -74,23 +104,18 @@ class SeriesResult(BaseModel):
 
     def calculate(self):
         self.calculate_runtime()
-        self.calculate_cpu_load()
-        self.calculate_ram_load()
+        self.calculate_cpu_usage()
+        # self.calculate_ram_load()
 
     def calculate_runtime(self):
         # calculate average runtime
         total = sum(r.runtime_ns() for r in self.run_results)
         self.average_runtime = total / self.count()
 
-    def calculate_cpu_load(self):
+    def calculate_cpu_usage(self):
         # calculate average cpu_load
-        total = sum(r.average_cpu_load for r in self.run_results)
-        self.average_cpu_load = total / self.count()
-
-    def calculate_ram_load(self):
-        # calculate average ram_load
-        total = sum(r.average_ram_load for r in self.run_results)
-        self.average_ram_load = total / self.count()
+        total = sum(r.average_cpu_busy for r in self.run_results)
+        self.average_cpu_busy = total / self.count()
 
     def count(self) -> int:
         return len(self.run_results)

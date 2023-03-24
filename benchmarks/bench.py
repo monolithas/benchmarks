@@ -132,7 +132,8 @@ def run():
             # get the series results
             result = program.series(
                 input,
-                runs
+                runs,
+                timeout
             )
 
             if not result:

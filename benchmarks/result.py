@@ -92,6 +92,7 @@ class SeriesResult(BaseModel):
     """The collected results multiple runs with different inputs"""
 
     bench: str
+    language: str
     input: float = 0
     average_runtime: int = 0
     average_cpu_busy: int = 0

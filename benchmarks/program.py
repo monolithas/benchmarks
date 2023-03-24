@@ -156,7 +156,7 @@ class Program:
 
         os.chdir(working)
 
-    def run(self, input: int | float, index: int) -> RunResult:
+    def run(self, input: int | float, index: int, timeout: int) -> RunResult:
         log.debug(f"Running program {self.name()}")
         result = RunResult(index=index,input=input)
 
@@ -171,6 +171,7 @@ class Program:
         # convert runfile path to an absolute path
         runfile = runfile.absolute()
 
+        # if runfile is not found print build output
         if not runfile.exists():
             print(self.__stdout)
             print(self.__stderr)
@@ -178,16 +179,19 @@ class Program:
         # verify that the run file exists
         assert runfile.exists(), f"File does not exist: {str(runfile)}"
 
-        result = measure(index, runfile, input, timeout=3600)
+        result = measure(index, runfile, input, timeout)
 
         os.chdir(working)
         return result
     
-    def series(self, input: int | float, count: int = 1) -> SeriesResult:
-        series = SeriesResult(bench=self.name(),input=input)
+    def series(self, input: int | float, count: int = 1, timeout: int = 3600) -> SeriesResult:
+        series = SeriesResult(
+            bench=self.name(),
+            input=input,
+            language=self.language())
 
         for i in range(count):
-            series.append_result(self.run(input,i))
+            series.append_result(self.run(input,i,timeout))
 
         return series
         

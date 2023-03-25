@@ -2,15 +2,14 @@ from os.path import abspath, basename
 from pathlib import Path
 from benchmarks.result import RunResult, SeriesResult
 from benchmarks.measure import measure
+from benchmarks.utilities import parse_command
 
 import shutil
 import logging
 import subprocess
 import os
 import toml
-import time
 import copy
-import psutil
 
 log = logging.getLogger()
 
@@ -87,6 +86,14 @@ class Program:
         
         return (options,extended)
     
+    def __runfile(self) -> Path:
+        name = ""
+        if self.language() == 'java':
+            name = f'{self.target()}.java'
+        else:
+            name = f'{self.name()}_run'
+        return Path(name)
+
     def path(self) -> Path:
         return self.original
 
@@ -97,8 +104,8 @@ class Program:
         return self.original.suffix.lstrip('.')
 
     def target(self) -> str:
-        path = str(self.original.name)
-        return path.split('-')[0]
+        name = str(self.original.name)
+        return name.split('-')[0]
     
     def build(self, config: dict):
         log.debug(f"Building program {self.name()}")
@@ -115,6 +122,10 @@ class Program:
             .get('makefile',None)
 
         assert makefile, f"No makefile specified in config"
+
+        # get the build variables
+        test = self.target()
+        test_var = 'TEST'
 
         # get the build tool
         tool = self.__tool(config)
@@ -137,6 +148,7 @@ class Program:
 
         # set the environment variables
         os.environ[tool_var] = tool
+        os.environ[test_var] = test 
         os.environ[opts_var] = ' '.join(cfg['options']['initial'])
         os.environ[opts_ext] = ' '.join(cfg['options']['extended'])
 
@@ -156,13 +168,13 @@ class Program:
 
         os.chdir(working)
 
-    def run(self, input: int | float, index: int, timeout: int) -> RunResult:
+    def run(self, config: dict, input: int | float, index: int, timeout: int) -> RunResult:
         log.debug(f"Running program {self.name()}")
         result = RunResult(index=index,input=input)
 
         # get various paths and names for build
         working = os.getcwd()
-        runfile = Path(f'{self.name()}_run')
+        runfile = self.__runfile()
         temp = abspath('tmp')
 
         # change directories to tmp
@@ -179,19 +191,34 @@ class Program:
         # verify that the run file exists
         assert runfile.exists(), f"File does not exist: {str(runfile)}"
 
-        result = measure(index, runfile, input, timeout)
+        arguments = {
+            'language': self.language(),
+            'benchmark': self.target(),
+            'binary': str(runfile),
+            'input': str(input)
+        }
+
+        # get command if possible
+        command = parse_command(config,arguments)
+
+        # if the command wasn't found, assume simple command
+        if not command:
+            command = [str(runfile),str(input)]
+
+        log.debug(f"Running: {command}")
+        result = measure(index, command, input, timeout)
 
         os.chdir(working)
         return result
     
-    def series(self, input: int | float, count: int = 1, timeout: int = 3600) -> SeriesResult:
+    def series(self, config: dict, input: int | float, count: int = 1, timeout: int = 3600) -> SeriesResult:
         series = SeriesResult(
             bench=self.name(),
             input=input,
             language=self.language())
 
         for i in range(count):
-            series.append_result(self.run(input,i,timeout))
+            series.append_result(self.run(config,input,i,timeout))
 
         return series
         

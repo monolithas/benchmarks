@@ -12,18 +12,21 @@ BENCH   := $(firstword $(subst -, ,$(TARGET)))
 #    	C_OPTS   
 #    	RUST_OPTS
 #    	CPP_OPTS 
+#    	JAVA_OPTS 
 #   
 #    Extended Options
 #    	ADA_OPTS_EXT 
 #    	C_OPTS_EXT   
 #    	RUST_OPTS_EXT
 #    	CPP_OPTS_EXT 
+#    	JAVA_OPTS_EXT 
 #   
 #    Tools
 #    	ADA_TOOL 
 #    	C_TOOL   
 #    	RUST_TOOL
 #    	CPP_TOOL 
+#    	JAVA_TOOL 
 
 ########################################
 # targets
@@ -55,3 +58,10 @@ BENCH   := $(firstword $(subst -, ,$(TARGET)))
 
 %.cpp_run: %.cpp
 	-$(CPP_TOOL) $(CPP_OPTS) $< -o $<.o && $(CPP_TOOL) $<.o -o $@ $(CPP_OPTS_EXT)
+
+# --------------------------------------
+# java
+
+%.java_run: %.java 
+	-mv $< $(BENCH).java
+	-$(JAVA_TOOL) $(JAVA_OPTS) $(BENCH).java $(JAVA_OPTS_EXT)

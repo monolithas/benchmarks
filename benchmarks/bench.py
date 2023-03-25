@@ -132,6 +132,7 @@ def run():
             
             # get the series results
             result = program.series(
+                config,
                 input,
                 runs,
                 timeout

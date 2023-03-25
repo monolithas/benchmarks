@@ -127,6 +127,12 @@ class SeriesResult(BaseModel):
     def bench_complexity(self) -> str | None:
         return self.bench.split('-')[1].split('.')[0]
         
+    def average_runtime_ms(self) -> float:
+        return self.average_runtime  / 1000000
+    
+    def average_runtime_s(self) -> float:
+        return self.average_runtime_ms()  / 1000000
+
     def __repr__(self) -> str:
         return f"<SeriesResult average={self.average_runtime}, count={self.count()}>"
     

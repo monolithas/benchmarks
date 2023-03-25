@@ -31,7 +31,7 @@ class Timeout(Thread):
         self.timedout = True
         os.kill(self.pid, signal.SIGKILL)
 
-def measure(index: int, path: Path, input: float, timeout: int) -> RunResult | None:
+def measure(index: int, command: list[str], input: float, timeout: int) -> RunResult | None:
     r, w = os.pipe()
     pid = os.fork()
 
@@ -67,7 +67,7 @@ def measure(index: int, path: Path, input: float, timeout: int) -> RunResult | N
 
             # start the process
             process = subprocess.Popen(
-                [str(path),str(input)],
+                command,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL)
 

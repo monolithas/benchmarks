@@ -5,9 +5,12 @@ import shlex
 import toml
 import logging
 
+
 from dataclasses import dataclass
 from pathlib import Path
-from benchmarks.utilities import read_list, write_list
+from more_itertools import peekable
+
+from benchmarks.utilities import read_list, write_list, setup_logger
 
 log = logging.getLogger()
 
@@ -17,8 +20,11 @@ class OptionState:
     index: int
     options: list[str]
     extended: list[str]
-    item: str | None
     dependencies: list[str]
+
+    item: str | None
+    prev: str | None
+    next: str | None
 
     def active(self) -> list[str]:
         if self.stage > 0:
@@ -27,12 +33,30 @@ class OptionState:
             return self.options
 
     def previous(self) -> str | None:
+        return self.prev
+        
+    def last(self) -> str | None:
         opts = self.active()
         if len(opts) > 0:
             return opts[-1]
 
     def advance(self):
         self.stage += 1
+
+    def append(self, item: str):
+        if self.stage > 0:
+            self.extended.append(item)
+        else:
+            self.options.append(item)
+
+    def set(self, item: str):
+        self.item = item
+
+    def set_next(self, item: str):
+        self.next = item
+
+    def set_prev(self, item: str):
+        self.prev = item
 
 def install_rust(name: str, version: str | None, location: str):
     # delete everything in tmp
@@ -96,7 +120,7 @@ def options_rust_param(state: OptionState) -> OptionState:
 
     # we're collecting before the output/input files
     if state.stage == 0:
-        prev = state.previous()
+        prev = state.last()
 
         # check if the current item is an argument
         if prev and prev.startswith('-') and len(prev) == 2:
@@ -151,7 +175,7 @@ def options_cpp_param(state: OptionState) -> OptionState:
 
     # we're collecting before the output/input files
     if state.stage == 0:
-        prev = state.previous()
+        prev = state.last()
 
         # check if the current item is an argument
         if prev and prev.startswith('-') and len(prev) == 2:
@@ -208,7 +232,7 @@ def options_ada_param(state: OptionState) -> OptionState:
 
     # we're collecting before the output/input files
     elif state.stage == 1:
-        prev = state.previous()
+        prev = state.last()
         
         # check if the current item is an argument
         if prev and prev.startswith('-') and len(prev) == 2:
@@ -248,6 +272,74 @@ def options_ada_param(state: OptionState) -> OptionState:
     # we're finished
     return state
 
+def options_java_param(state: OptionState) -> OptionState:
+
+    # we're skipping everything before javac
+    if state.stage == 0:
+        if state.item.endswith('javac'):
+            state.advance()
+
+    # we're collecting before the output/input files
+    elif state.stage == 1:
+        prev = state.previous()
+        last = state.last()
+
+        # skip these flags    
+        if state.item in ('-d','-cp'):
+            pass
+
+        # skip arguments for these flags    
+        elif prev in ('-d','-cp'):
+            pass
+
+        # check if the current item is an argument
+        elif last and last.startswith('-') and len(last) == 2:
+            state.options.append(state.item)
+
+        # check if the current item is a flag
+        elif state.item.startswith('-'):
+            state.options.append(state.item)
+
+        # advance to the next stage
+        elif state.next and state.next.endswith('java'):
+            state.advance()
+
+        # advance to the next stage
+        else:
+            state.advance()
+    
+    # we're skipping the output/input files
+    elif state.stage == 2:
+
+        prev = state.previous()
+        if prev and prev.endswith('java'):
+            state.advance()
+        elif state.item.endswith('java'):
+            state.advance()
+
+    # we're collecting after the output/input files
+    elif state.stage == 3:
+        last = state.last()
+
+        # collect extended flags
+        if state.item.startswith('-'):
+            state.extended.append(state.item)
+
+        # collect extended flags
+        elif last and last.startswith('-') and len(last) == 2:
+            state.extended.append(state.item)
+
+        # signal completed
+        else:
+            state = None
+
+    # signal completed
+    else:
+        state = None
+
+    # we're finished
+    return state
+
 def options(text: str, lang: str) -> OptionState:
     start = "MAKE:"
     index = text.rfind(start)
@@ -259,21 +351,30 @@ def options(text: str, lang: str) -> OptionState:
         index = 0,
         options = [],
         extended = [],
+        dependencies = [],
         item = None,
-        dependencies = []
+        prev = None,
+        next = None
     )
 
+    it = peekable(enumerate(shlex.split(chunk)))
+
     # iterate through all params until finished
-    for (i, item) in enumerate(shlex.split(chunk)):
+    for (i, item) in it:
+        _, next = it.peek((0,None))
         state.index = i
-        state.item = item
+
+        state.set_next(next)
+        state.set_prev(state.item)
+        state.set(item)
 
         # parse a single param by language
         tmp = {
             "rust": options_rust_param,
             "c": options_c_param,
             "cpp": options_cpp_param,
-            "ada": options_ada_param
+            "ada": options_ada_param,
+            "java": options_java_param
         }[lang](state)
 
         # update and continue or exit
@@ -380,9 +481,28 @@ def run():
         default=1,
         help='Number of times to retry downloading the benchmark page')
     
+    parser.add_argument('--logfile', 
+        dest='logfile', 
+        action='store',
+        default=None,
+        help='Path to a log file')
+    
+    parser.add_argument('--loglevel', 
+        dest='loglevel', 
+        action='store',
+        default='warn',
+        help='The level to log at')
+
     # parse the command line arguments
     args = vars(parser.parse_args())
-    path = os.getcwd()
+    root = os.getcwd()
+
+    # get logging configuration parameters
+    loglevel = args['loglevel'].upper()
+    logfile = args['logfile']
+
+    # initialize the logger for the application
+    log = setup_logger(loglevel,logfile)
 
     dependencies = args['dependencies']
     retry = int(args['retry'])
@@ -401,7 +521,7 @@ def run():
     bench_path = Path(f"programs/{bench}")
     bench_path.mkdir(exist_ok=True)
 
-    # TODO: Store a list of downloaded dependencies somewhere so we don't download the same ones twice
+    # don't download the same ones twice
     deps_list = read_list("output/dependencies.list")
 
     # install the dependencies if necessary
@@ -427,19 +547,18 @@ def run():
         deps_list.append(dep)
 
     write_list("output/dependencies.list",deps_list)
-    os.chdir(path)
+    os.chdir(root)
 
     # download the benchmark locally
     succeeded = False
     for _ in range(retry):
         try:
-            log.info(f"downloading {name}")
+            log.info(f"Downloading {name}")
             download(name,bench,lang,count,deps_path,dependencies)
             succeeded = True
             break
-        except:
-            log.warn(f"failed to download")
-            pass
+        except Exception as e:
+            log.warn(f"Failed to download: {e}")
 
     # check that the download succeeded
     if not succeeded:

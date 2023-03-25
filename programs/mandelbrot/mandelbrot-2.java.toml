@@ -1,0 +1,8 @@
+[options]
+initial = []
+extended = []
+
+[dependencies]
+path = "data/dependencies/java"
+names = []
+files = []

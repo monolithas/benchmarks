@@ -114,9 +114,7 @@ def run():
                 if language not in results.keys():
                     results[language] = []
 
-                # convert nanoseconds to milliseconds
-                runtime = series.average_runtime / 1000000
-
+                runtime = series.average_runtime_ms()
                 results[language].append(runtime)
 
                 if runtime > maximum:
@@ -124,24 +122,38 @@ def run():
 
         x = np.arange(len(inputs))  # the label locations
 
-        width = 0.1
+        width = 0.15
         multiplier = 0
 
         fig, ax = plt.subplots(layout='constrained')
 
+        colors = {
+            'rust': 'blue',
+            'ada': 'green',
+            'java': 'red',
+            'c': 'lightgray',
+            'cpp': 'gray'
+        }
+
+        # sort the measurements alphabetically
+        keys = list(results.keys())
+        keys.sort()
+        results = {i: results[i] for i in keys}
+
         for language, measurements in results.items():
+            # build a bar chart group
             offset = width * multiplier
-            rects = ax.bar(x + offset, measurements, width, label=language)
+            rects = ax.bar(x + offset, measurements, width, label=language, color=colors[language])
             ax.bar_label(rects, padding=3)
             multiplier += 1
 
         # Add some text for labels, title and custom x-axis tick labels, etc.
-        ax.legend(loc='upper left', ncols=4)
-        ax.set_ylabel('Runtime (ns)')
+        ax.legend(loc='upper left', ncols=multiplier)
+        ax.set_ylabel('Runtime (ms)')
         ax.set_xlabel('Input')
         ax.set_title(benchmark)
 
         ax.set_xticks(x + width, inputs)        
-        ax.set_ylim(0, maximum * 1.01)
+        ax.set_ylim(0, maximum * 1.25)
 
         plt.show()

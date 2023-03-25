@@ -2,16 +2,16 @@
     "bench": "mandelbrot-4.c",
     "language": "c",
     "input": 2000.0,
-    "average_runtime": 906619.0,
+    "average_runtime": 908611.0,
     "average_cpu_busy": 0.0,
     "average_ram_load": 0,
     "run_results": [
         {
             "index": 0,
             "input": 2000.0,
-            "run_time": 839281.0,
-            "start_time": 1679663711336597115,
-            "stop_time": 1679663711337436396,
+            "run_time": 910899.0,
+            "start_time": 1679756189176508165,
+            "stop_time": 1679756189177419064,
             "ram_samples": [],
             "cpu_samples": [
                 0.0,
@@ -32,19 +32,19 @@
                 0.0
             ],
             "average_cpu_busy": 0.0,
-            "user_cpu_time": 0.142595,
+            "user_cpu_time": 0.218383,
             "sys_cpu_time": 0.0,
-            "total_cpu_time": 0.142595,
-            "max_rss": 17896,
+            "total_cpu_time": 0.218383,
+            "max_rss": 18032,
             "exit_code": 0,
             "failed": false
         },
         {
             "index": 1,
             "input": 2000.0,
-            "run_time": 865731.0,
-            "start_time": 1679663711349161294,
-            "stop_time": 1679663711350027025,
+            "run_time": 904957.0,
+            "start_time": 1679756189194878841,
+            "stop_time": 1679756189195783798,
             "ram_samples": [],
             "cpu_samples": [
                 0.0,
@@ -65,19 +65,19 @@
                 0.0
             ],
             "average_cpu_busy": 0.0,
-            "user_cpu_time": 0.15414899999999998,
-            "sys_cpu_time": 0.0077069999999999994,
-            "total_cpu_time": 0.16185599999999997,
-            "max_rss": 17896,
+            "user_cpu_time": 0.152855,
+            "sys_cpu_time": 0.005879,
+            "total_cpu_time": 0.158734,
+            "max_rss": 18032,
             "exit_code": 0,
             "failed": false
         },
         {
             "index": 2,
             "input": 2000.0,
-            "run_time": 913542.0,
-            "start_time": 1679663711363322640,
-            "stop_time": 1679663711364236182,
+            "run_time": 895730.0,
+            "start_time": 1679756189209094663,
+            "stop_time": 1679756189209990393,
             "ram_samples": [],
             "cpu_samples": [
                 0.0,
@@ -98,19 +98,19 @@
                 0.0
             ],
             "average_cpu_busy": 0.0,
-            "user_cpu_time": 0.14938099999999999,
+            "user_cpu_time": 0.216879,
             "sys_cpu_time": 0.0,
-            "total_cpu_time": 0.14938099999999999,
-            "max_rss": 17900,
+            "total_cpu_time": 0.216879,
+            "max_rss": 18036,
             "exit_code": 0,
             "failed": false
         },
         {
             "index": 3,
             "input": 2000.0,
-            "run_time": 888234.0,
-            "start_time": 1679663711376750306,
-            "stop_time": 1679663711377638540,
+            "run_time": 916159.0,
+            "start_time": 1679756189227699017,
+            "stop_time": 1679756189228615176,
             "ram_samples": [],
             "cpu_samples": [
                 0.0,
@@ -131,19 +131,19 @@
                 0.0
             ],
             "average_cpu_busy": 0.0,
-            "user_cpu_time": 0.16714299999999999,
+            "user_cpu_time": 0.198546,
             "sys_cpu_time": 0.0,
-            "total_cpu_time": 0.16714299999999999,
-            "max_rss": 17900,
+            "total_cpu_time": 0.198546,
+            "max_rss": 18036,
             "exit_code": 0,
             "failed": false
         },
         {
             "index": 4,
             "input": 2000.0,
-            "run_time": 992953.0,
-            "start_time": 1679663711391737246,
-            "stop_time": 1679663711392730199,
+            "run_time": 904156.0,
+            "start_time": 1679756189245273159,
+            "stop_time": 1679756189246177315,
             "ram_samples": [],
             "cpu_samples": [
                 0.0,
@@ -164,19 +164,19 @@
                 0.0
             ],
             "average_cpu_busy": 0.0,
-            "user_cpu_time": 0.10069399999999999,
-            "sys_cpu_time": 0.0472,
-            "total_cpu_time": 0.147894,
-            "max_rss": 17900,
+            "user_cpu_time": 0.19827399999999998,
+            "sys_cpu_time": 0.0,
+            "total_cpu_time": 0.19827399999999998,
+            "max_rss": 18040,
             "exit_code": 0,
             "failed": false
         },
         {
             "index": 5,
             "input": 2000.0,
-            "run_time": 939973.0,
-            "start_time": 1679663711405337441,
-            "stop_time": 1679663711406277414,
+            "run_time": 919765.0,
+            "start_time": 1679756189262013116,
+            "stop_time": 1679756189262932881,
             "ram_samples": [],
             "cpu_samples": [
                 0.0,
@@ -197,10 +197,10 @@
                 0.0
             ],
             "average_cpu_busy": 0.0,
-            "user_cpu_time": 0.123682,
-            "sys_cpu_time": 0.059845999999999996,
-            "total_cpu_time": 0.183528,
-            "max_rss": 17900,
+            "user_cpu_time": 0.14308099999999999,
+            "sys_cpu_time": 0.004471,
+            "total_cpu_time": 0.147552,
+            "max_rss": 18040,
             "exit_code": 0,
             "failed": false
         }

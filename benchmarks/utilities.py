@@ -7,6 +7,19 @@ DEFAULT_DEP_PATH:  Path = ROOT / '../data/dependencies/'
 DEFAULT_PROG_PATH: Path = ROOT / '../programs/'
 DEFAULT_OUT_PATH:  Path = ROOT / '../output/'
 
+def parse_command(config: dict, arguments: dict) -> list[str]:
+    command = []
+    if 'commands' in config:
+        line = config['commands'].get(arguments['language'],'')
+        for item in line.split():
+            command.append({
+                '<BENCHMARK>': arguments.get('benchmark',''),
+                '<LANGUAGE>': arguments.get('language',''),
+                '<BINARY>': arguments.get('binary',''),
+                '<INPUT>': arguments.get('input',''),
+            }.get(item,item))
+    return command
+
 def setup_logger(level: str, path: str = None):
     """Configure the root logger used for the program"""
     fmt = '%(asctime)s - %(levelname)s - %(module)s - %(message)s'

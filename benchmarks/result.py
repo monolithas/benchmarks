@@ -120,32 +120,27 @@ class SeriesResult(BaseModel):
 
     def count(self) -> int:
         return len(self.run_results)
+    
+    def bench_name(self) -> str | None:
+        return self.bench.split('-')[0]
+    
+    def bench_complexity(self) -> str | None:
+        return self.bench.split('-')[1].split('.')[0]
         
     def __repr__(self) -> str:
-        return f"<SeriesResult average={self.average}, count={self.count()}>"
+        return f"<SeriesResult average={self.average_runtime}, count={self.count()}>"
     
     def __str__(self) -> str:
         return self.__repr__()
     
 class SummaryResult(BaseModel):
     """The collected results of a benchmark run"""
+
     datetime: datetime
 
     # add other summary information here
 
-    class Config:
-        exclude = {"series"}
-
-    def __init__(self, series: list[SeriesResult]):
-        super().__init__(
-            datetime=datetime.utcnow()
-
-            # add other summary default information here
-
-        )
-        self.__build(series)
-
-    def __build(self, series: list[SeriesResult]):
+    def build(self, series: list[SeriesResult]):
         
         # build summary information here
         

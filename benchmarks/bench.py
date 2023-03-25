@@ -2,6 +2,7 @@ import toml
 import argparse
 
 from pathlib import Path
+from datetime import datetime
 
 from benchmarks.program import Program
 from benchmarks.result import SummaryResult
@@ -153,7 +154,9 @@ def run():
             series.append(result)
 
     # summarize the benchmarks
-    summary = SummaryResult(series)
+    summary = SummaryResult(datetime=datetime.utcnow())
+    summary.build(series)
+
     summary_path = output_path / 'summary.json'
 
     # write the summary to the output directory

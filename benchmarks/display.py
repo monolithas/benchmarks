@@ -2,7 +2,9 @@ import os
 import toml
 import argparse
 
-from matplotlib import pyplot as plt
+import numpy as np
+import matplotlib.pyplot as plt
+
 from pathlib import Path
 
 from benchmarks.result import SummaryResult, SeriesResult
@@ -84,7 +86,8 @@ def run():
     collated = {}
 
     for result in results:
-        bench = result.bench
+        bench = result.bench_name()
+        complexity = result.bench_complexity()
         input = result.input
         lang  = result.language
 
@@ -97,3 +100,48 @@ def run():
         if lang not in collated[bench][input]:
             collated[bench][input][lang] = result
 
+    for benchmark, input_data in collated.items():
+
+        # get labels for benchmark groupings
+        inputs = tuple(str(k) for k in input_data.keys())
+
+        results = {}
+        maximum = 0.0
+
+        for input, language_data in input_data.items():
+
+            for language, series in language_data.items():
+                if language not in results.keys():
+                    results[language] = []
+
+                # convert nanoseconds to milliseconds
+                runtime = series.average_runtime / 1000000
+
+                results[language].append(runtime)
+
+                if runtime > maximum:
+                    maximum = runtime
+
+        x = np.arange(len(inputs))  # the label locations
+
+        width = 0.1
+        multiplier = 0
+
+        fig, ax = plt.subplots(layout='constrained')
+
+        for language, measurements in results.items():
+            offset = width * multiplier
+            rects = ax.bar(x + offset, measurements, width, label=language)
+            ax.bar_label(rects, padding=3)
+            multiplier += 1
+
+        # Add some text for labels, title and custom x-axis tick labels, etc.
+        ax.legend(loc='upper left', ncols=4)
+        ax.set_ylabel('Runtime (ns)')
+        ax.set_xlabel('Input')
+        ax.set_title(benchmark)
+
+        ax.set_xticks(x + width, inputs)        
+        ax.set_ylim(0, maximum * 1.01)
+
+        plt.show()

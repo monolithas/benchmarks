@@ -99,9 +99,20 @@ class SeriesResult(BaseModel):
     average_ram_load: int = 0
     run_results: list[RunResult] = []
 
+    maximum_runtime: float = None
+    minimum_runtime: float = None
+
     def append_result(self, result: RunResult):
         self.run_results.append(result)
         self.calculate()
+
+        self.maximum_runtime = max(
+            self.maximum_runtime or 0,
+            result.runtime_ns())
+        
+        self.minimum_runtime = min(
+            self.minimum_runtime or result.runtime_ns(),
+            result.runtime_ns())
 
     def calculate(self):
         self.calculate_runtime()
@@ -129,9 +140,12 @@ class SeriesResult(BaseModel):
         
     def average_runtime_ms(self) -> float:
         return self.average_runtime  / 1000000
+        
+    def minimum_runtime_ms(self) -> float:
+        return self.minimum_runtime  / 1000000
     
-    def average_runtime_s(self) -> float:
-        return self.average_runtime_ms()  / 1000000
+    def maximum_runtime_ms(self) -> float:
+        return self.maximum_runtime  / 1000000
 
     def __repr__(self) -> str:
         return f"<SeriesResult average={self.average_runtime}, count={self.count()}>"

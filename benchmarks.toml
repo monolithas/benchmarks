@@ -8,9 +8,6 @@ runs = 6
 # maximum time to wait on program
 timeout = 3600
 
-# memory sampling delay
-sample = 0.2
-
 [commands]
 # Available variables:
 #   <BENCHMARK>:   the name of the benchmark being run
@@ -20,33 +17,37 @@ sample = 0.2
 
 java = "java -cp . <BENCHMARK>"
 rust = "<BINARY> <INPUT>"
+ada = "<BINARY> <INPUT>"
+cpp = "<BINARY> <INPUT>"
+c = "<BINARY> <INPUT>"
 
 [tools]
 # build tools for benchmarks
 
-rust = 'rustc'
-c = 'gcc-12'
-cpp = 'g++-12'
-ada = 'gnatmake'
 java = 'javac'
+rust = 'rustc'
+ada = 'gnatmake'
+cpp = 'g++-12'
+c = 'gcc-12'
+
 
 [options]
 # flags for each tool
 
+java = '-d . -cp .'
+java_ext = ''
+
 rust = '-L../data/dependencies/rust'
 rust_ext = ''
-
-c = '-L../data/dependencies/c'
-c_ext = ''
-
-cpp = '-L../data/dependencies/cpp'
-cpp_ext = ''
 
 ada = '-L../data/dependencies/ada'
 ada_ext = ''
 
-java = '-d . -cp .'
-java_ext = ''
+cpp = '-L../data/dependencies/cpp'
+cpp_ext = ''
+
+c = '-L../data/dependencies/c'
+c_ext = ''
 
 [filters]
 

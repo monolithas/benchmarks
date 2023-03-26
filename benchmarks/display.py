@@ -74,13 +74,21 @@ def run():
     # initialize the logger for the application
     log = setup_logger(loglevel,logfile)
 
-    # convert all 'output/results/*' to SeriesResult objects
-    log.debug("loading benchmark results")
-    results = load_results('output/results/')
+    # build paths for output and images
+    root_path = Path('output')
+    results_path = root_path / 'results'
+    summary_path = root_path / 'summary.json'
+    output_path = root_path / 'analysis'
 
-    # convert the 'output/summary.json' file to a SummaryResult object
+    output_path.mkdir(exist_ok=True) 
+
+    # load all results as SeriesResult objects
+    log.debug("loading benchmark results")
+    results = load_results(results_path)
+
+    # load the summary as a SummaryResult object
     log.debug("loading benchmark summary")
-    summary = SummaryResult.parse_file('output/summary.json')
+    summary = SummaryResult.parse_file(summary_path)
 
     # sort the results for display
     collated = {}
@@ -102,11 +110,13 @@ def run():
 
     for benchmark, input_data in collated.items():
 
+        runtime_analysis_path = output_path / f'{benchmark}.runtime.png'
+
         # get labels for benchmark groupings
         inputs = tuple(str(k) for k in input_data.keys())
 
         results = {}
-        maximum = 0.0
+        limit = 0.0
 
         for input, language_data in input_data.items():
 
@@ -115,17 +125,27 @@ def run():
                     results[language] = []
 
                 runtime = series.average_runtime_ms()
-                results[language].append(runtime)
+                maximum = series.maximum_runtime_ms()
+                minimum = series.minimum_runtime_ms()
 
-                if runtime > maximum:
-                    maximum = runtime
+                results[language].append({
+                    'runtime': runtime,
+                    'minimum': runtime - minimum,
+                    'maximum': maximum - runtime
+                })
+
+                if runtime > limit:
+                    limit = runtime
+
+                if maximum > limit:
+                    limit = maximum
 
         x = np.arange(len(inputs))  # the label locations
 
         width = 0.15
-        multiplier = 0
+        count = 0
 
-        fig, ax = plt.subplots(layout='constrained')
+        _, ax = plt.subplots(layout='constrained')
 
         colors = {
             'rust': 'blue',
@@ -141,19 +161,39 @@ def run():
         results = {i: results[i] for i in keys}
 
         for language, measurements in results.items():
+            offset = width * count
+            
+            # get measurements for display
+            runtimes = [ v['runtime'] for v in measurements ]
+            minimums = [ v['minimum'] for v in measurements ]
+            maximums = [ v['maximum'] for v in measurements ]
+
+            error = [minimums,maximums]
+
             # build a bar chart group
-            offset = width * multiplier
-            rects = ax.bar(x + offset, measurements, width, label=language, color=colors[language])
-            ax.bar_label(rects, padding=3)
-            multiplier += 1
+            group = ax.bar(
+                x + offset, 
+                runtimes, 
+                width,
+                yerr=error,
+                label=language, 
+                color=colors[language])
+
+            # add value labels at the tops
+            ax.bar_label(group, 
+                padding=3, 
+                fmt="{:.4f}")
+
+            count += 1
 
         # Add some text for labels, title and custom x-axis tick labels, etc.
-        ax.legend(loc='upper left', ncols=multiplier)
+        ax.legend(loc='upper left', ncols=count)
         ax.set_ylabel('Runtime (ms)')
         ax.set_xlabel('Input')
         ax.set_title(benchmark)
 
         ax.set_xticks(x + width, inputs)        
-        ax.set_ylim(0, maximum * 1.25)
+        ax.set_ylim(0, limit * 1.25)
 
-        plt.show()
+        plt.gcf().set_size_inches(10, 5)
+        plt.savefig(runtime_analysis_path, dpi=200)

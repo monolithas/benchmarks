@@ -105,7 +105,6 @@ def run():
     values  = config.get('values',{})
     runs    = int(general.get('runs','1'))
     timeout = int(general.get('timeout','3600'))
-    sample  = int(general.get('sample','0.2'))
 
     # build paths to the result directories
     output_path = Path('output/')

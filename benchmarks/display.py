@@ -33,84 +33,10 @@ def load_results(path: Path | str) -> list[SeriesResult]:
                 results.append(result)
     return results
 
-def run():
+def create_runtime_analysis(path: Path, data: dict, config: dict):
+    for benchmark, input_data in data.items():
 
-    # define and parse command line arguments
-    parser = argparse.ArgumentParser(
-        prog='Display',
-        description='Display results from benchmarks',
-        epilog='Leave an issue on the repo if you have trouble')
-    
-    parser.add_argument('--config', 
-        dest='config', 
-        action='store',
-        default='benchmarks.toml',
-        help='Path to a toml config file')
-
-    parser.add_argument('--logfile', 
-        dest='logfile', 
-        action='store',
-        default=None,
-        help='Path to a log file')
-    
-    parser.add_argument('--loglevel', 
-        dest='loglevel', 
-        action='store',
-        default='warn',
-        help='The level to log at')
-
-    args = vars(parser.parse_args())
-
-    # get the benchmark configuration file
-    with open(args['config'], 'r') as f:
-        config = toml.loads(f.read(), _dict=dict)
-
-    assert config, "No configuration given"
-
-    # get logging configuration parameters
-    loglevel = args['loglevel'].upper()
-    logfile = args['logfile']
-
-    # initialize the logger for the application
-    log = setup_logger(loglevel,logfile)
-
-    # build paths for output and images
-    root_path = Path('output')
-    results_path = root_path / 'results'
-    summary_path = root_path / 'summary.json'
-    output_path = root_path / 'analysis'
-
-    output_path.mkdir(exist_ok=True) 
-
-    # load all results as SeriesResult objects
-    log.debug("loading benchmark results")
-    results = load_results(results_path)
-
-    # load the summary as a SummaryResult object
-    log.debug("loading benchmark summary")
-    summary = SummaryResult.parse_file(summary_path)
-
-    # sort the results for display
-    collated = {}
-
-    for result in results:
-        bench = result.bench_name()
-        complexity = result.bench_complexity()
-        input = result.input
-        lang  = result.language
-
-        if bench not in collated:
-            collated[bench] = {}
-
-        if input not in collated[bench]:
-            collated[bench][input] = {}
-
-        if lang not in collated[bench][input]:
-            collated[bench][input][lang] = result
-
-    for benchmark, input_data in collated.items():
-
-        runtime_analysis_path = output_path / f'{benchmark}.runtime.png'
+        analysis_path = path / f'{benchmark}.runtime.png'
 
         # get labels for benchmark groupings
         inputs = tuple(str(k) for k in input_data.keys())
@@ -118,15 +44,15 @@ def run():
         results = {}
         limit = 0.0
 
-        for input, language_data in input_data.items():
+        for _, language_data in input_data.items():
 
             for language, series in language_data.items():
                 if language not in results.keys():
                     results[language] = []
 
-                runtime = series.average_runtime_ms()
-                maximum = series.maximum_runtime_ms()
-                minimum = series.minimum_runtime_ms()
+                runtime = series.average_run_time_ms()
+                maximum = series.maximum_run_time_ms()
+                minimum = series.minimum_run_time_ms()
 
                 results[language].append({
                     'runtime': runtime,
@@ -196,4 +122,175 @@ def run():
         ax.set_ylim(0, limit * 1.25)
 
         plt.gcf().set_size_inches(10, 5)
-        plt.savefig(runtime_analysis_path, dpi=200)
+        plt.savefig(analysis_path, dpi=200)
+
+def create_usage_analysis(path: Path, data: dict, config: dict):
+    for benchmark, input_data in data.items():
+
+        analysis_path = path / f'{benchmark}.cpu.png'
+
+        # get labels for benchmark groupings
+        inputs = tuple(str(k) for k in input_data.keys())
+
+        results = {}
+        limit = 0.0
+
+        for _, language_data in input_data.items():
+
+            for language, series in language_data.items():
+                if language not in results.keys():
+                    results[language] = []
+
+                cputime = series.average_cpu_time_us()
+                maximum = series.maximum_cpu_time_us()
+                minimum = series.minimum_cpu_time_us()
+
+                results[language].append({
+                    'cputime': cputime,
+                    'minimum': cputime - minimum,
+                    'maximum': maximum - cputime
+                })
+
+                if cputime > limit:
+                    limit = cputime
+
+                if maximum > limit:
+                    limit = maximum
+
+        x = np.arange(len(inputs))  # the group locations
+
+        num_langs = len(results.keys())
+        num_input = len(inputs)
+
+        width = (num_langs / 100) * num_input
+        count = 0
+
+        _, ax = plt.subplots()
+
+        colors = {
+            'rust': 'blue',
+            'ada': 'green',
+            'java': 'red',
+            'c': 'lightgray',
+            'cpp': 'gray'
+        }
+
+        # sort the measurements alphabetically
+        keys = list(results.keys())
+        keys.sort()
+        results = {i: results[i] for i in keys}
+
+        for language, measurements in results.items():
+            offset = width * count
+            
+            # get measurements for display
+            cputimes = [ v['cputime'] for v in measurements ]
+            minimums = [ v['minimum'] for v in measurements ]
+            maximums = [ v['maximum'] for v in measurements ]
+
+            error = [minimums,maximums]
+
+            # build a bar chart group
+            group = ax.bar(
+                x + offset, 
+                cputimes, 
+                width,
+                yerr=error,
+                label=language, 
+                color=colors[language])
+
+            # add value labels at the tops
+            ax.bar_label(
+                group, 
+                padding=3)
+
+            count += 1
+
+        # Add some text for labels, title and custom x-axis tick labels, etc.
+        ax.legend(loc='upper left', ncols=count)
+        ax.set_ylabel('CPU Busy (us)')
+        ax.set_xlabel('Input')
+        ax.set_title(benchmark)
+
+        ax.set_xticks(x + width, inputs)        
+        ax.set_ylim(0, limit * 1.25)
+
+        plt.gcf().set_size_inches(10, 5)
+        plt.savefig(analysis_path, dpi=200)
+
+def run():
+
+    # define and parse command line arguments
+    parser = argparse.ArgumentParser(
+        prog='Display',
+        description='Display results from benchmarks',
+        epilog='Leave an issue on the repo if you have trouble')
+    
+    parser.add_argument('--config', 
+        dest='config', 
+        action='store',
+        default='benchmarks.toml',
+        help='Path to a toml config file')
+
+    parser.add_argument('--logfile', 
+        dest='logfile', 
+        action='store',
+        default=None,
+        help='Path to a log file')
+    
+    parser.add_argument('--loglevel', 
+        dest='loglevel', 
+        action='store',
+        default='warn',
+        help='The level to log at')
+
+    args = vars(parser.parse_args())
+
+    # get the benchmark configuration file
+    with open(args['config'], 'r') as f:
+        config = toml.loads(f.read(), _dict=dict)
+
+    assert config, "No configuration given"
+
+    # get logging configuration parameters
+    loglevel = args['loglevel'].upper()
+    logfile = args['logfile']
+
+    # initialize the logger for the application
+    log = setup_logger(loglevel,logfile)
+
+    # build paths for output and images
+    root_path = Path('output')
+    results_path = root_path / 'results'
+    summary_path = root_path / 'summary.json'
+    output_path = root_path / 'analysis'
+
+    output_path.mkdir(exist_ok=True) 
+
+    # load all results as SeriesResult objects
+    log.debug("loading benchmark results")
+    results = load_results(results_path)
+
+    # load the summary as a SummaryResult object
+    log.debug("loading benchmark summary")
+    summary = SummaryResult.parse_file(summary_path)
+
+    # sort the results for display
+    collated = {}
+
+    for result in results:
+        bench = result.bench_name()
+        input = result.input
+        lang  = result.language
+
+        if bench not in collated:
+            collated[bench] = {}
+
+        if input not in collated[bench]:
+            collated[bench][input] = {}
+
+        if lang not in collated[bench][input]:
+            collated[bench][input][lang] = result
+
+    create_runtime_analysis(output_path,collated,config)
+    create_usage_analysis(output_path,collated,config)

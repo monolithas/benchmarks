@@ -54,20 +54,29 @@ class RunResult(BaseModel):
         self.run_time = self.stop_time - self.start_time
 
     def elapsed(self) -> float:
-        return self.runtime_s()
+        return self.runt_ime_s()
 
-    def runtime_s(self) -> float:
-        return self.runtime_ms() / 1000000
+    def run_time_s(self) -> float:
+        return self.run_time_ms() / 1000000
 
-    def runtime_ms(self) -> float:
-        return self.runtime_ns() / 1000000
+    def run_time_ms(self) -> float:
+        return self.run_time_ns() / 1000000
 
-    def runtime_ns(self) -> float:
+    def run_time_ns(self) -> float:
         return self.run_time
+    
+    def cpu_time_s(self) -> float:
+        return self.cpu_time_ms() / 1000000
+
+    def cpu_time_ms(self) -> float:
+        return self.cpu_time_ns() / 1000000
+
+    def cpu_time_ns(self) -> float:
+        return self.total_cpu_time
 
     def calculate_cpu_load(self):
-        runtime = self.runtime_s()
-        scaled = [runtime*percent/100.0 for percent in self.cpu_samples]
+        run_time = self.run_time_s()
+        scaled = [run_time*percent/100.0 for percent in self.cpu_samples]
         self.average_cpu_busy = sum(scaled)
 
     def calculate_mem_load(self):
@@ -94,40 +103,58 @@ class SeriesResult(BaseModel):
     bench: str
     language: str
     input: float = 0
-    average_runtime: int = 0
+
+    average_run_time: float = 0.0
+    maximum_run_time: float = None
+    minimum_run_time: float = None
+
+    average_cpu_time: float = 0.0
+    minimum_cpu_time: float = None
+    maximum_cpu_time: float = None
+
     average_cpu_busy: int = 0
     average_ram_load: int = 0
-    run_results: list[RunResult] = []
 
-    maximum_runtime: float = None
-    minimum_runtime: float = None
+    run_results: list[RunResult] = []
 
     def append_result(self, result: RunResult):
         self.run_results.append(result)
-        self.calculate()
+        self.calculate(result)
 
-        self.maximum_runtime = max(
-            self.maximum_runtime or 0,
-            result.runtime_ns())
-        
-        self.minimum_runtime = min(
-            self.minimum_runtime or result.runtime_ns(),
-            result.runtime_ns())
-
-    def calculate(self):
-        self.calculate_runtime()
+    def calculate(self, result: RunResult):
+        self.calculate_run_time()
         self.calculate_cpu_usage()
         # self.calculate_ram_load()
+        self.calculate_run_time_limits(result)
+        self.calculate_cpu_time_limits(result)
 
-    def calculate_runtime(self):
-        # calculate average runtime
-        total = sum(r.runtime_ns() for r in self.run_results)
-        self.average_runtime = total / self.count()
+    def calculate_run_time(self):
+        # calculate average run_time
+        total = sum(r.run_time_ns() for r in self.run_results)
+        self.average_run_time = total / self.count()
 
     def calculate_cpu_usage(self):
         # calculate average cpu_load
-        total = sum(r.average_cpu_busy for r in self.run_results)
-        self.average_cpu_busy = total / self.count()
+        total = sum(r.cpu_time_ns() for r in self.run_results)
+        self.average_cpu_time = total / self.count()
+
+    def calculate_run_time_limits(self, result: RunResult):
+        self.maximum_run_time = max(
+            self.maximum_run_time or 0,
+            result.run_time_ns())
+        
+        self.minimum_run_time = min(
+            self.minimum_run_time or result.run_time_ns(),
+            result.run_time_ns())
+        
+    def calculate_cpu_time_limits(self, result: RunResult):
+        self.maximum_cpu_time = max(
+            self.maximum_cpu_time or 0,
+            result.cpu_time_ns())
+        
+        self.minimum_cpu_time = min(
+            self.minimum_cpu_time or result.cpu_time_ns(),
+            result.cpu_time_ns())
 
     def count(self) -> int:
         return len(self.run_results)
@@ -138,17 +165,26 @@ class SeriesResult(BaseModel):
     def bench_complexity(self) -> str | None:
         return self.bench.split('-')[1].split('.')[0]
         
-    def average_runtime_ms(self) -> float:
-        return self.average_runtime  / 1000000
+    def average_run_time_ms(self) -> float:
+        return self.average_run_time / 1000000
         
-    def minimum_runtime_ms(self) -> float:
-        return self.minimum_runtime  / 1000000
+    def minimum_run_time_ms(self) -> float:
+        return self.minimum_run_time / 1000000
     
-    def maximum_runtime_ms(self) -> float:
-        return self.maximum_runtime  / 1000000
+    def maximum_run_time_ms(self) -> float:
+        return self.maximum_run_time / 1000000
+    
+    def average_cpu_time_us(self) -> float:
+        return self.average_cpu_time
+        
+    def minimum_cpu_time_us(self) -> float:
+        return self.minimum_cpu_time
+    
+    def maximum_cpu_time_us(self) -> float:
+        return self.maximum_cpu_time
 
     def __repr__(self) -> str:
-        return f"<SeriesResult average={self.average_runtime}, count={self.count()}>"
+        return f"<SeriesResult average={self.average_run_time_ms()}, count={self.count()}>"
     
     def __str__(self) -> str:
         return self.__repr__()

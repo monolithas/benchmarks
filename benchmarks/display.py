@@ -10,6 +10,9 @@ from pathlib import Path
 from benchmarks.result import SummaryResult, SeriesResult
 from benchmarks.utilities import setup_logger
 
+BAR_WIDTH: float = 0.16
+BAR_LABEL: str = '{:.2f}'
+
 def load_result(path: Path | str) -> SeriesResult:
     path = Path(path)
     assert path.exists(), f"Path doesn't exist: {str(path)}"
@@ -68,7 +71,7 @@ def create_runtime_analysis(path: Path, data: dict, config: dict):
 
         x = np.arange(len(inputs))  # the label locations
 
-        width = 0.15
+        width = BAR_WIDTH
         count = 0
 
         _, ax = plt.subplots(layout='constrained')
@@ -108,7 +111,7 @@ def create_runtime_analysis(path: Path, data: dict, config: dict):
             # add value labels at the tops
             ax.bar_label(group, 
                 padding=3, 
-                fmt="{:.4f}")
+                fmt=BAR_LABEL)
 
             count += 1
 
@@ -121,7 +124,7 @@ def create_runtime_analysis(path: Path, data: dict, config: dict):
         ax.set_xticks(x + width, inputs)        
         ax.set_ylim(0, limit * 1.25)
 
-        plt.gcf().set_size_inches(10, 5)
+        plt.gcf().set_size_inches(15, 5)
         plt.savefig(analysis_path, dpi=200)
 
 def create_usage_analysis(path: Path, data: dict, config: dict):
@@ -159,10 +162,7 @@ def create_usage_analysis(path: Path, data: dict, config: dict):
 
         x = np.arange(len(inputs))  # the group locations
 
-        num_langs = len(results.keys())
-        num_input = len(inputs)
-
-        width = (num_langs / 100) * num_input
+        width = BAR_WIDTH
         count = 0
 
         _, ax = plt.subplots()
@@ -202,7 +202,8 @@ def create_usage_analysis(path: Path, data: dict, config: dict):
             # add value labels at the tops
             ax.bar_label(
                 group, 
-                padding=3)
+                padding=3,
+                fmt=BAR_LABEL)
 
             count += 1
 
@@ -215,7 +216,7 @@ def create_usage_analysis(path: Path, data: dict, config: dict):
         ax.set_xticks(x + width, inputs)        
         ax.set_ylim(0, limit * 1.25)
 
-        plt.gcf().set_size_inches(10, 5)
+        plt.gcf().set_size_inches(15, 5)
         plt.savefig(analysis_path, dpi=200)
 
 def run():

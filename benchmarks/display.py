@@ -41,13 +41,16 @@ def create_runtime_analysis(path: Path, data: dict, config: dict):
 
         analysis_path = path / f'{benchmark}.runtime.png'
 
+        input_data = list(input_data.items())
+        input_data.sort(key=lambda v: v[0])
+
         # get labels for benchmark groupings
-        inputs = tuple(str(k) for k in input_data.keys())
+        inputs = tuple(str(k[0]) for k in input_data)
 
         results = {}
         limit = 0.0
 
-        for _, language_data in input_data.items():
+        for _, language_data in input_data:
 
             for language, series in language_data.items():
                 if language not in results.keys():
@@ -132,13 +135,16 @@ def create_usage_analysis(path: Path, data: dict, config: dict):
 
         analysis_path = path / f'{benchmark}.cpu.png'
 
+        input_data = list(input_data.items())
+        input_data.sort(key=lambda v: v[0])
+
         # get labels for benchmark groupings
-        inputs = tuple(str(k) for k in input_data.keys())
+        inputs = tuple(str(k[0]) for k in input_data)
 
         results = {}
         limit = 0.0
 
-        for _, language_data in input_data.items():
+        for _, language_data in input_data:
 
             for language, series in language_data.items():
                 if language not in results.keys():

@@ -10,7 +10,11 @@ from pathlib import Path
 from benchmarks.result import SummaryResult, SeriesResult
 from benchmarks.utilities import setup_logger
 
-BAR_WIDTH: float = 0.16
+CHART_HEIGHT: int = 10 
+CHART_WIDTH: int = 20
+
+BAR_PAD_TOP: float = 0.25
+BAR_WIDTH: float = 0.18
 BAR_LABEL: str = '{:.2f}'
 
 def load_result(path: Path | str) -> SeriesResult:
@@ -36,6 +40,90 @@ def load_results(path: Path | str) -> list[SeriesResult]:
                 results.append(result)
     return results
 
+def save_chart(title: str, labels: list[str], path: Path, data: dict, ylabel: str | None = None, xlabel: str | None = None, sideways: bool = False):
+    x = np.arange(len(labels))
+
+    width = BAR_WIDTH
+    count = 0
+
+    _, ax = plt.subplots()
+
+    colors = {
+        'rust': 'blue',
+        'ada': 'green',
+        'java': 'red',
+        'c': 'lightgray',
+        'cpp': 'gray'
+    }
+
+    # sort the measurements alphabetically
+    keys = list(data.keys())
+    keys.sort()
+    data = {i: data[i] for i in keys}
+
+    for language, measurements in data.items():
+        offset = width * count
+        
+        # get measurements for display
+        values = [ v['value'] for v in measurements ]
+        minimums = [ v['minimum'] for v in measurements ]
+        maximums = [ v['maximum'] for v in measurements ]
+
+        error = [minimums,maximums]
+
+        group = None
+
+        # build a bar chart group
+        if sideways:
+            group = ax.barh(
+                x + offset, 
+                values, 
+                width,
+                xerr=error,
+                label=language, 
+                color=colors[language])
+        else:
+            group = ax.bar(
+                x + offset, 
+                values, 
+                width,
+                yerr=error,
+                label=language, 
+                color=colors[language])
+
+        # add value labels at the tops
+        ax.bar_label(
+            group, 
+            padding=3,
+            fmt=BAR_LABEL)
+
+        count += 1
+
+    # Add some text for labels, title and custom x-axis tick labels, etc.
+    ax.legend(loc='upper left', ncols=count)
+
+    if sideways:
+        if ylabel: ax.set_xlabel(ylabel)
+        if xlabel: ax.set_ylabel(xlabel)
+    else:
+        if ylabel: ax.set_ylabel(ylabel)
+        if xlabel: ax.set_xlabel(xlabel)
+
+    ax.set_title(title)
+
+    if sideways:
+        _, limit = ax.get_xlim()
+        ax.set_xlim(0, limit * (1 + BAR_PAD_TOP))
+        ax.set_yticks(x + width, labels)
+        plt.gcf().set_size_inches(CHART_HEIGHT,CHART_WIDTH)
+    else:
+        _, limit = ax.get_ylim()
+        ax.set_ylim(0, limit * (1 + BAR_PAD_TOP))
+        ax.set_xticks(x + width, labels)
+        plt.gcf().set_size_inches(CHART_WIDTH,CHART_HEIGHT)
+
+    plt.savefig(path, dpi=200, bbox_inches='tight')
+
 def create_runtime_analysis(path: Path, data: dict, config: dict):
     for benchmark, input_data in data.items():
 
@@ -48,7 +136,6 @@ def create_runtime_analysis(path: Path, data: dict, config: dict):
         inputs = tuple(str(k[0]) for k in input_data)
 
         results = {}
-        limit = 0.0
 
         for _, language_data in input_data:
 
@@ -56,79 +143,25 @@ def create_runtime_analysis(path: Path, data: dict, config: dict):
                 if language not in results.keys():
                     results[language] = []
 
-                runtime = series.average_run_time_ms()
+                value = series.average_run_time_ms()
                 maximum = series.maximum_run_time_ms()
                 minimum = series.minimum_run_time_ms()
 
                 results[language].append({
-                    'runtime': runtime,
-                    'minimum': runtime - minimum,
-                    'maximum': maximum - runtime
+                    'value': value,
+                    'minimum': value - minimum,
+                    'maximum': maximum - value
                 })
 
-                if runtime > limit:
-                    limit = runtime
-
-                if maximum > limit:
-                    limit = maximum
-
-        x = np.arange(len(inputs))  # the label locations
-
-        width = BAR_WIDTH
-        count = 0
-
-        _, ax = plt.subplots(layout='constrained')
-
-        colors = {
-            'rust': 'blue',
-            'ada': 'green',
-            'java': 'red',
-            'c': 'lightgray',
-            'cpp': 'gray'
-        }
-
-        # sort the measurements alphabetically
-        keys = list(results.keys())
-        keys.sort()
-        results = {i: results[i] for i in keys}
-
-        for language, measurements in results.items():
-            offset = width * count
-            
-            # get measurements for display
-            runtimes = [ v['runtime'] for v in measurements ]
-            minimums = [ v['minimum'] for v in measurements ]
-            maximums = [ v['maximum'] for v in measurements ]
-
-            error = [minimums,maximums]
-
-            # build a bar chart group
-            group = ax.bar(
-                x + offset, 
-                runtimes, 
-                width,
-                yerr=error,
-                label=language, 
-                color=colors[language])
-
-            # add value labels at the tops
-            ax.bar_label(group, 
-                padding=3, 
-                fmt=BAR_LABEL)
-
-            count += 1
-
-        # Add some text for labels, title and custom x-axis tick labels, etc.
-        ax.legend(loc='upper left', ncols=count)
-        ax.set_ylabel('Runtime (ms)')
-        ax.set_xlabel('Input')
-        ax.set_title(benchmark)
-
-        ax.set_xticks(x + width, inputs)        
-        ax.set_ylim(0, limit * 1.25)
-
-        plt.gcf().set_size_inches(15, 5)
-        plt.savefig(analysis_path, dpi=200)
+        save_chart(
+            title=benchmark,
+            labels=inputs,
+            path=analysis_path,
+            data=results,
+            ylabel='Runtime (ms)',
+            xlabel='Input Values',
+            sideways=True
+        )
 
 def create_usage_analysis(path: Path, data: dict, config: dict):
     for benchmark, input_data in data.items():
@@ -142,7 +175,6 @@ def create_usage_analysis(path: Path, data: dict, config: dict):
         inputs = tuple(str(k[0]) for k in input_data)
 
         results = {}
-        limit = 0.0
 
         for _, language_data in input_data:
 
@@ -150,80 +182,24 @@ def create_usage_analysis(path: Path, data: dict, config: dict):
                 if language not in results.keys():
                     results[language] = []
 
-                cputime = series.average_cpu_time_us()
+                value = series.average_cpu_time_us()
                 maximum = series.maximum_cpu_time_us()
                 minimum = series.minimum_cpu_time_us()
 
                 results[language].append({
-                    'cputime': cputime,
-                    'minimum': cputime - minimum,
-                    'maximum': maximum - cputime
+                    'value': value,
+                    'minimum': value - minimum,
+                    'maximum': maximum - value
                 })
 
-                if cputime > limit:
-                    limit = cputime
-
-                if maximum > limit:
-                    limit = maximum
-
-        x = np.arange(len(inputs))  # the group locations
-
-        width = BAR_WIDTH
-        count = 0
-
-        _, ax = plt.subplots()
-
-        colors = {
-            'rust': 'blue',
-            'ada': 'green',
-            'java': 'red',
-            'c': 'lightgray',
-            'cpp': 'gray'
-        }
-
-        # sort the measurements alphabetically
-        keys = list(results.keys())
-        keys.sort()
-        results = {i: results[i] for i in keys}
-
-        for language, measurements in results.items():
-            offset = width * count
-            
-            # get measurements for display
-            cputimes = [ v['cputime'] for v in measurements ]
-            minimums = [ v['minimum'] for v in measurements ]
-            maximums = [ v['maximum'] for v in measurements ]
-
-            error = [minimums,maximums]
-
-            # build a bar chart group
-            group = ax.bar(
-                x + offset, 
-                cputimes, 
-                width,
-                yerr=error,
-                label=language, 
-                color=colors[language])
-
-            # add value labels at the tops
-            ax.bar_label(
-                group, 
-                padding=3,
-                fmt=BAR_LABEL)
-
-            count += 1
-
-        # Add some text for labels, title and custom x-axis tick labels, etc.
-        ax.legend(loc='upper left', ncols=count)
-        ax.set_ylabel('CPU Busy (us)')
-        ax.set_xlabel('Input')
-        ax.set_title(benchmark)
-
-        ax.set_xticks(x + width, inputs)        
-        ax.set_ylim(0, limit * 1.25)
-
-        plt.gcf().set_size_inches(15, 5)
-        plt.savefig(analysis_path, dpi=200)
+        save_chart(
+            title=benchmark,
+            labels=inputs,
+            path=analysis_path,
+            data=results,
+            ylabel='CPU Busy (us)',
+            xlabel='Input Values'
+        )
 
 def run():
 
@@ -298,6 +274,8 @@ def run():
 
         if lang not in collated[bench][input]:
             collated[bench][input][lang] = result
+
+    plt.rcParams.update({'font.size': 20})
 
     create_runtime_analysis(output_path,collated,config)
     create_usage_analysis(output_path,collated,config)

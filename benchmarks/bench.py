@@ -1,11 +1,12 @@
 import toml
 import argparse
+import json
 
 from pathlib import Path
 from datetime import datetime
 
 from benchmarks.program import Program
-from benchmarks.result import SummaryResult
+from benchmarks.result import SeriesResult, SummaryResult
 from benchmarks.utilities import setup_logger
 
 def find_programs(config: dict) -> list[Program]:
@@ -48,6 +49,59 @@ def find_programs(config: dict) -> list[Program]:
     result = tmp
 
     return [ Program(p) for p in result ]
+
+def save_results_individual(results: list[SeriesResult], path: Path):
+    for result in results:
+        # get the result as json
+        data = result.json(indent=4)
+
+        # build the output json path
+        filepath = Path(path)
+        filepath = filepath / result.bench
+        key  = f"{filepath.suffix}.{result.input}.json"
+        filepath = filepath.with_suffix(key)
+
+        # write the json to the output file
+        with open(filepath,'w') as f:
+            f.write(data)
+
+def save_results_collated(results: list[SeriesResult], path: Path):
+    benchmarks = {}
+
+    for result in results:
+        bench = result.bench_name() 
+        input = result.input
+        data = result.dict()
+
+        if bench not in benchmarks:
+            benchmarks[bench] = {}
+
+        if input not in benchmarks[bench]:
+            benchmarks[bench][input] = []
+
+        benchmarks[bench][input].append(data)
+
+    for bench, inputs in benchmarks.items():
+
+        filepath = path / f"{bench}.json"
+
+        data = json.dumps({
+            'name': bench,
+            'inputs': inputs
+        },indent=4)
+
+        # write the json to the output file
+        with open(filepath,'w') as f:
+            f.write(data)
+
+def save_summary(result: list[SeriesResult], path: Path):
+    # summarize the benchmarks
+    summary = SummaryResult(datetime=datetime.utcnow())
+    summary.build(result)
+
+    # write the summary to the output file
+    with open(path,'w') as f:
+        f.write(summary.json(indent=4))
 
 def run():
     config = None # benchmark configuration
@@ -109,12 +163,13 @@ def run():
     # build paths to the result directories
     output_path = Path('output/')
     result_path = output_path / 'results'
+    summary_path = output_path / 'summary.json'
 
     # create directories if they don't exist
     output_path.mkdir(exist_ok=True)
     result_path.mkdir(exist_ok=True)
 
-    series = []
+    results = []
 
     # for each program, build and run the benchmark
     for program in programs:
@@ -137,28 +192,10 @@ def run():
                 timeout
             )
 
-            if not result:
+            if result:
+                results.append(result)
+            else:
                 log.warn(f"No result for {program.name()} (input={input})")
-                continue
 
-            # build the output json path and write
-            data = result.json(indent=4)
-            path = result_path / result.bench
-            key  = f"{path.suffix}.{input}.json"
-            path = path.with_suffix(key)
-
-            with open(path,'w') as f:
-                f.write(data)
-
-            # save the series result for summarization
-            series.append(result)
-
-    # summarize the benchmarks
-    summary = SummaryResult(datetime=datetime.utcnow())
-    summary.build(series)
-
-    summary_path = output_path / 'summary.json'
-
-    # write the summary to the output directory
-    with open(summary_path,'w') as f:
-        f.write(summary.json(indent=4))
+    save_results_collated(results,result_path)
+    save_summary(results,summary_path)

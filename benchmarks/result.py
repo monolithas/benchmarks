@@ -104,6 +104,8 @@ class SeriesResult(BaseModel):
     language: str
     input: float = 0
 
+    complexity: int = 0
+
     average_run_time: float = 0.0
     maximum_run_time: float = None
     minimum_run_time: float = None
@@ -127,6 +129,7 @@ class SeriesResult(BaseModel):
         # self.calculate_ram_load()
         self.calculate_run_time_limits(result)
         self.calculate_cpu_time_limits(result)
+        self.complexity = self.bench_complexity()
 
     def calculate_run_time(self):
         # calculate average run_time

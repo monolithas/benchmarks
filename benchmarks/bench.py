@@ -112,25 +112,25 @@ def run():
         description='Benchmark tool to compare various languages',
         epilog='Leave an issue on the repo if you have trouble')
 
-    parser.add_argument('--config', 
+    parser.add_argument('-c','--config', 
         dest='config', 
         action='store',
         default='benchmarks.toml',
         help='Path to a toml config file')
     
-    parser.add_argument('--output', 
+    parser.add_argument('-o','--output', 
         dest='output', 
         action='store',
-        default='results.xml',
+        default='output',
         help='Path to an output file')
     
-    parser.add_argument('--logfile', 
+    parser.add_argument('-f','--logfile', 
         dest='logfile', 
         action='store',
         default=None,
         help='Path to a log file')
     
-    parser.add_argument('--loglevel', 
+    parser.add_argument('-l','--loglevel', 
         dest='loglevel', 
         action='store',
         default='warn',
@@ -161,7 +161,7 @@ def run():
     timeout = int(general.get('timeout','3600'))
 
     # build paths to the result directories
-    output_path = Path('output/')
+    output_path = Path(args['output'])
     result_path = output_path / 'results'
     summary_path = output_path / 'summary.json'
 

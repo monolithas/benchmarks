@@ -209,19 +209,19 @@ def run():
         description='Display results from benchmarks',
         epilog='Leave an issue on the repo if you have trouble')
     
-    parser.add_argument('--config', 
+    parser.add_argument('-c','--config', 
         dest='config', 
         action='store',
         default='benchmarks.toml',
         help='Path to a toml config file')
 
-    parser.add_argument('--logfile', 
+    parser.add_argument('-f','--logfile', 
         dest='logfile', 
         action='store',
         default=None,
         help='Path to a log file')
     
-    parser.add_argument('--loglevel', 
+    parser.add_argument('-l','--loglevel', 
         dest='loglevel', 
         action='store',
         default='warn',

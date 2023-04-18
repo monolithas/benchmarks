@@ -69,6 +69,7 @@ def save_results_collated(results: list[SeriesResult], path: Path):
     benchmarks = {}
 
     for result in results:
+        complexity = result.complexity
         bench = result.bench_name() 
         input = result.input
         data = result.dict()
@@ -77,9 +78,12 @@ def save_results_collated(results: list[SeriesResult], path: Path):
             benchmarks[bench] = {}
 
         if input not in benchmarks[bench]:
-            benchmarks[bench][input] = []
+            benchmarks[bench][input] = {}
 
-        benchmarks[bench][input].append(data)
+        if complexity not in benchmarks[bench][input]:
+            benchmarks[bench][input][complexity] = []
+
+        benchmarks[bench][input][complexity].append(data)
 
     for bench, inputs in benchmarks.items():
 
